@@ -2,8 +2,8 @@
 
 ## Local results
 
-- Installed 0.4.7: capture, shortcuts, automatic saving and continuous region scrolling confirmed by the user.
-- 0.5.0 candidate: adds opt-in launch at login and a revised Preferences layout; not installed over 0.4.7.
+- Installed 0.5.1: original app icon, opt-in launch at login and revised Preferences layout. Prior capture, shortcuts, saving and continuous scrolling were confirmed by the user. Clipboard, OCR, pins and measurement have additional live verification on 0.5.1.
+- The 0.5.1 ZIP and checksum match the installed release resources; universal architectures and strict signature verification pass.
 - arm64 and x86_64 optimized binaries compile for macOS 14 or newer.
 - ZIP extraction, strict ad-hoc signature verification and SHA-256 check pass.
 - Configuration, exports, annotation history/rendering, synthetic shortcuts, editor layout, pins, local OCR and image overlap/seams have regression coverage.
