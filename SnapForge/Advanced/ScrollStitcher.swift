@@ -183,10 +183,12 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
         }
         window.orderOut(nil)
         automaticTask = Task {
+            var scrollingTask: Task<Void, Error>?
             var deliverAutomatically = false
             var unchangedAttempts = 0
             var endMessage = "Automatic capture stopped. Finish to open the captured image."
             defer {
+                scrollingTask?.cancel()
                 automaticTask = nil
                 removeMonitors()
                 let cursor = NSEvent.mouseLocation
@@ -218,6 +220,17 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
                 }
                 ScrollAutomation.positionPointer(at: point)
                 try await Task.sleep(for: .milliseconds(100))
+                // Scroll independently of screenshot and stitching work so capture
+                // processing does not introduce visible stop/start motion.
+                let scrollPoints = ScrollAutomation.step(for: selection.screenRect.height)
+                scrollingTask = Task {
+                    while !Task.isCancelled {
+                        guard !target.isTerminated,
+                              NSWorkspace.shared.frontmostApplication?.processIdentifier == target.processIdentifier,
+                              ScrollAutomation.target(at: point)?.processIdentifier == target.processIdentifier else { return }
+                        try await ScrollAutomation.scrollContinuously(at: point, points: scrollPoints)
+                    }
+                }
                 for _ in 0..<40 {
                     try Task.checkCancellation()
                     guard !target.isTerminated, NSWorkspace.shared.frontmostApplication?.processIdentifier == target.processIdentifier else {
@@ -226,9 +239,7 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
                     guard ScrollAutomation.target(at: point)?.processIdentifier == target.processIdentifier else {
                         endMessage = "Stopped because another window covers the region."; return
                     }
-                    let movingHeight = selection.screenRect.height * (contentCrop?.height ?? selection.pixelRect.height) / selection.pixelRect.height
-                    try await ScrollAutomation.scrollSlowly(at: point, points: ScrollAutomation.step(for: movingHeight))
-                    try await Task.sleep(for: .milliseconds(450))
+                    try await Task.sleep(for: .milliseconds(250))
                     let frame = try await regionFrame(displayID)
                     let before = previous, joined = composite
                     do {
@@ -286,9 +297,10 @@ enum ScrollAutomation {
         CGPoint(x: region.midX, y: mainDisplayHeight - region.midY)
     }
     static func step(for height: CGFloat) -> Int32 { Int32(max(1, min(240, height * 0.30))) }
-    static func scrollSlowly(at point: CGPoint, points: Int32) async throws {
-        // Spread each move over 300 ms so the user can see the target scrolling.
-        let count: Int32 = 12
+    static func scrollContinuously(at point: CGPoint, points: Int32) async throws {
+        // Continuous 25 ms pulses: twice the previous average travel rate,
+        // with no settling pauses between movements.
+        let count: Int32 = 15
         for index in 0..<count {
             try Task.checkCancellation()
             let amount = (points * (index + 1) / count) - (points * index / count)
