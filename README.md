@@ -1,6 +1,6 @@
 # SnapForge
 
-Independent, entirely local macOS menu bar screenshot utility. Phase 0 only; macOS 14+.
+Independent, entirely local macOS menu bar screenshot utility. Phase 1 implementation; macOS 14+. Live capture verification is pending a permission restart.
 
 ## Build
 
@@ -10,17 +10,20 @@ Open `SnapForge.xcodeproj` in full Xcode, select SnapForge and build. For an ad-
 xcodebuild -project SnapForge.xcodeproj -scheme SnapForge -configuration Release -derivedDataPath DerivedData CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=YES build
 ```
 
-When only Apple's Command Line Tools are installed, run `./scripts/build.sh`. This compiles both architectures, creates and ad-hoc signs `build/Release/SnapForge.app`, verifies its signature, and creates a transfer ZIP and SHA-256 checksum. No third-party dependencies.
+When only Apple's Command Line Tools are installed, run `./scripts/build.sh`. This compiles both architectures, creates and ad-hoc signs `build/Release/SnapForge.app`, verifies its signature, and creates a transfer ZIP and SHA-256 checksum. No third-party dependencies. This workspace’s file provider can reattach Finder metadata to the copied `.app`; use the ZIP and extract into a normal local folder. The staged app and ZIP extracted outside the synced workspace are signature-verified.
 
-Launch the app and click the camera in the menu bar → Capture Main Display. Grant Screen Recording permission when prompted. If required, quit and reopen after enabling permission in System Settings. The preview supports Copy and Save PNG. Capture uses ScreenCaptureKit's macOS 14 screenshot API at display pixel resolution. The app captures the main display only in this phase.
+Launch the app and click the camera in the menu bar. Capture the main display, choose any connected display, drag a region, or choose an application window. Grant Screen Recording permission when prompted. If required, quit and reopen after enabling permission in System Settings. The preview supports Copy and Save As using the PNG/JPEG format selected in Preferences. Capture uses ScreenCaptureKit's macOS 14 screenshot API at display pixel resolution. Region selection stays within one display. Preferences configure automatic copying, preview, automatic saving, output folder/format and global shortcuts.
 
 ## Architecture
 
 - App: application lifecycle, menu commands, permission onboarding and errors.
 - Capture: asynchronous ScreenCaptureKit screenshot service.
-- Preview: AppKit image window, PNG export and clipboard.
+- Preview: AppKit image window.
+- Output: ImageIO PNG/JPEG export and clipboard.
+- Preferences: SwiftUI controls and local UserDefaults persistence.
+- Shortcuts: Carbon global hot-key registration, with conflict reporting.
 
-Future phases can add independent editing, image processing, OCR and preferences modules. No network services, launch-at-login registration or global shortcuts are included.
+Future phases can add independent editing, image processing and OCR modules. No network services or launch-at-login registration are included.
 
 ## Signing and deployment
 
@@ -30,6 +33,6 @@ For ordinary distribution, use an approved paid Developer ID Application identit
 
 On a second Mac, no Xcode is required. macOS may block an unnotarized or untrusted build, especially under managed-device policy. Use only OS-supported approval when permitted; otherwise obtain IT approval or a properly signed and notarized build. Do not remove quarantine, disable Gatekeeper or bypass management controls.
 
-See `docs/SECOND_MAC_CHECKLIST.md` and `docs/PHASE0_VALIDATION.md`.
+Run `./scripts/test.sh` for native automated checks. See `docs/SECOND_MAC_CHECKLIST.md`, `docs/PHASE0_VALIDATION.md` and `docs/PHASE1_VALIDATION.md` for actual validation and remaining manual checks.
 
 Apple references: [Developer ID](https://developer.apple.com/developer-id/) and [macOS distribution](https://developer.apple.com/macos/distribution/).

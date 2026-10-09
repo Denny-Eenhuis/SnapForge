@@ -10,8 +10,8 @@ final class PreviewController {
         let view = NSImageView()
         view.image = NSImage(cgImage: captured, size: NSSize(width: captured.width, height: captured.height))
         view.imageScaling = .scaleProportionallyUpOrDown
-        view.setAccessibilityLabel("Captured main display")
-        let save = NSButton(title: "Save PNG…", target: self, action: #selector(savePNG))
+        view.setAccessibilityLabel("Captured screenshot")
+        let save = NSButton(title: "Save As…", target: self, action: #selector(saveImage))
         let copy = NSButton(title: "Copy", target: self, action: #selector(copyImage))
         let buttons = NSStackView(views: [copy, save])
         buttons.orientation = .horizontal
@@ -33,27 +33,19 @@ final class PreviewController {
 
     @objc private func copyImage() {
         guard let image else { return }
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.writeObjects([NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))])
+        do { try ImageOutput.copy(image) } catch { NSAlert(error: error).runModal() }
     }
-    @objc private func savePNG() {
+    @objc private func saveImage() {
         guard let image, let window else { return }
+        let format = Preferences.shared.format
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = "SnapForge-\(Int(Date().timeIntervalSince1970)).png"
+        panel.allowedContentTypes = [format.contentType]
+        panel.directoryURL = Preferences.shared.folder
+        panel.nameFieldStringValue = ImageOutput.filename(format: format)
         panel.beginSheetModal(for: window) { response in
             guard response == .OK, let url = panel.url else { return }
-            do {
-                let bitmap = NSBitmapImageRep(cgImage: image)
-                guard let data = bitmap.representation(using: .png, properties: [:]) else {
-                    throw CocoaError(.fileWriteUnknown)
-                }
-                try data.write(to: url, options: .atomic)
-            } catch {
-                let alert = NSAlert(error: error)
-                alert.beginSheetModal(for: window)
-            }
+            do { try ImageOutput.save(image, format: format, to: url) }
+            catch { NSAlert(error: error).beginSheetModal(for: window) }
         }
     }
 }
