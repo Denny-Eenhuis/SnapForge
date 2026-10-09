@@ -130,7 +130,7 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
         else { window.center() }
     }
     private func updateStatus() {
-        status.stringValue = "Captured · \(composite.width) × \(composite.height) pixels. Automatic scrolling moves slowly through this region. Escape stops it. You can restart or add frames manually. Keep the target visible."
+        status.stringValue = "Captured · \(composite.width) × \(composite.height) pixels. Automatic scrolling moves visibly through this region. Escape stops it. You can restart or add frames manually. Keep the target visible."
     }
     @objc private func addFrame() {
         guard !busy, automaticTask == nil, let id = selection.displayID else { return }
@@ -200,7 +200,7 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
                 }
             }
             do {
-                try await Task.sleep(for: .milliseconds(1200))
+                try await Task.sleep(for: .milliseconds(450))
                 // Refresh the baseline after bringing the target forward.
                 let baseline = try await regionFrame(displayID)
                 if composite.height == previous.height {
@@ -228,7 +228,7 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
                     }
                     let movingHeight = selection.screenRect.height * (contentCrop?.height ?? selection.pixelRect.height) / selection.pixelRect.height
                     try await ScrollAutomation.scrollSlowly(at: point, points: ScrollAutomation.step(for: movingHeight))
-                    try await Task.sleep(for: .milliseconds(1200))
+                    try await Task.sleep(for: .milliseconds(450))
                     let frame = try await regionFrame(displayID)
                     let before = previous, joined = composite
                     do {
@@ -285,15 +285,15 @@ enum ScrollAutomation {
     static func point(in region: CGRect, mainDisplayHeight: CGFloat) -> CGPoint {
         CGPoint(x: region.midX, y: mainDisplayHeight - region.midY)
     }
-    static func step(for height: CGFloat) -> Int32 { Int32(max(1, min(160, height * 0.20))) }
+    static func step(for height: CGFloat) -> Int32 { Int32(max(1, min(240, height * 0.30))) }
     static func scrollSlowly(at point: CGPoint, points: Int32) async throws {
-        // Spread each move over 600 ms so the user can see the target scrolling.
+        // Spread each move over 300 ms so the user can see the target scrolling.
         let count: Int32 = 12
         for index in 0..<count {
             try Task.checkCancellation()
             let amount = (points * (index + 1) / count) - (points * index / count)
             if amount > 0 { try scroll(at: point, points: amount) }
-            try await Task.sleep(for: .milliseconds(50))
+            try await Task.sleep(for: .milliseconds(25))
         }
     }
     static func target(at point: CGPoint) -> NSRunningApplication? {
