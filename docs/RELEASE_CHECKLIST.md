@@ -36,3 +36,7 @@ Installed 0.5.1 Command-C successfully opened the captured image in Preview via 
 Launch-at-login registration was observed enabled/allowed in macOS after user consent; actual next-login launch and disable testing remain pending.
 
 The user confirmed SnapForge launched after a real logout/login. Launch-at-login startup is passed; disabling startup remains untested.
+
+## Remaining-task audit
+
+See [remaining checks](REMAINING_CHECKS.md): 40-frame all-pixel synthetic stitch stress and height protection passed; x86_64 configuration/export tests passed under Rosetta; disabling startup was observed in macOS and restored enabled. Strict integrity passes, but Gatekeeper distribution assessment rejects the ad-hoc app. Full Xcode, approved signing/notarization, physical Intel/second-Mac/multiple-monitor runtime and complete spoken VoiceOver testing remain open.
