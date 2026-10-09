@@ -14,6 +14,8 @@ for ARCH in arm64 x86_64; do
 done
 xcrun lipo -create build/SnapForge-arm64 build/SnapForge-x86_64 -output "$APP/Contents/MacOS/SnapForge"
 cp SnapForge/Resources/Info.plist "$APP/Contents/Info.plist"
+mkdir -p "$APP/Contents/Resources"
+cp SnapForge/Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 SIGNING_IDENTITY="${SNAPFORGE_SIGNING_IDENTITY:--}"
 if [[ "$SIGNING_IDENTITY" == "-" ]]; then
   echo "Ad-hoc build: rebuilding can invalidate Screen Recording permission. Reauthorize the final installed copy."
