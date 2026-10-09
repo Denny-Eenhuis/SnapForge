@@ -23,6 +23,29 @@ check(colors.sample(x: 0, y: 1) == PixelSample(red: 0, green: 0, blue: 255), "bo
 check(colors.sample(x: 0, y: 0)?.description == "#FF0000 · RGB 255, 0, 0", "HEX/RGB formatting")
 let full = fixture(width: 180, height: 600)
 guard let first = full.cropping(to: CGRect(x: 0, y: 0, width: 180, height: 300)), let second = full.cropping(to: CGRect(x: 0, y: 130, width: 180, height: 300)), let third = full.cropping(to: CGRect(x: 0, y: 260, width: 180, height: 300)) else { fatalError("Fixture crop") }
+func withFixedBands(_ image: CGImage) throws -> CGImage {
+    let pixels = try PixelBuffer(image), width = image.width
+    let top = 64, bottom = 80, height = image.height + top + bottom
+    var data = [UInt8](repeating: 255, count: width * height * 4)
+    for y in 0..<height { for x in 0..<width {
+        let i = (y * width + x) * 4
+        if y >= top && y < height - bottom {
+            let j = ((y - top) * width + x) * 4
+            for c in 0..<4 { data[i+c] = pixels.bytes[j+c] }
+        } else {
+            data[i] = UInt8((x * 3 + y * 5) % 255); data[i+1] = 30; data[i+2] = UInt8((x * 7 + y * 11) % 255)
+        }
+    } }
+    guard let provider = CGDataProvider(data: Data(data) as CFData), let result = CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: width * 4, space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue), provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent) else { fatalError("Fixed-band fixture") }
+    return result
+}
+let chatBefore = try withFixedBands(first), chatAfter = try withFixedBands(second)
+let moving = try ScrollStitcher.movingCrop(previous: chatBefore, next: chatAfter)
+check(moving == CGRect(x: 0, y: 64, width: 180, height: 300), "fixed chat header and composer are excluded")
+guard let chatBodyBefore = chatBefore.cropping(to: moving), let chatBodyAfter = chatAfter.cropping(to: moving) else { fatalError("Chat crop") }
+let chatJoin = try ScrollStitcher.append(composite: chatBodyBefore, previous: chatBodyBefore, next: chatBodyAfter)
+check(chatJoin.height == 430, "moving chat content stitches after fixed-band exclusion")
+do { _ = try ScrollStitcher.movingCrop(previous: chatBefore, next: chatBefore); fatalError("Static chat must reject") } catch ScrollStitcher.StitchError.unchanged {} catch { throw error }
 let overlap = try ScrollStitcher.overlap(previous: first, next: second)
 check(overlap == 170, "known vertical overlap")
 let two = try ScrollStitcher.append(composite: first, previous: first, next: second)
@@ -46,7 +69,7 @@ let text = try OCRService.recognize(textImage).map(\.text).joined(separator: " "
 check(text.contains("SnapForge") && text.contains("12345"), "Vision recognizes real rendered text")
 let white = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 100, pixelsHigh: 100, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)
 if let blank = white?.cgImage { let lines = try OCRService.recognize(blank); check(lines.isEmpty, "blank OCR result") }
-print("PASS: Vision text recognition, blank OCR, color bounds, overlap, three-frame seams, unchanged/dimension/unrelated rejection")
+print("PASS: Vision text recognition, blank OCR, color bounds, overlap, fixed chat bands, three-frame seams, unchanged/dimension/unrelated rejection")
 
 let browserFixture = "Tests/Advanced/Fixtures/browser-before.png"
 if CommandLine.arguments.count == 3 || FileManager.default.fileExists(atPath: browserFixture) {

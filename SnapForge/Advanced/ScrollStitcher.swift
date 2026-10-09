@@ -44,6 +44,28 @@ struct ScrollStitcher {
         if let alternative = ranked.first(where: { abs($0.key - best.key) > max(8, height / 100) }), alternative.value < best.value + 1 { throw StitchError.overlap }
         return height - best.key
     }
+    // A chat viewport can include stationary title/composer bands. Only infer a
+    // narrower viewport when its moving portion has a independently valid match.
+    static func movingCrop(previous: CGImage, next: CGImage) throws -> CGRect {
+        guard previous.width == next.width, previous.height == next.height else { throw StitchError.dimensions }
+        let a = try PixelBuffer(previous), b = try PixelBuffer(next)
+        let width = previous.width, height = previous.height
+        let step = max(1, width / 64)
+        func changed(_ y: Int) -> Bool {
+            var difference = 0, count = 0
+            for x in stride(from: max(0, width / 20), to: max(1, width - width / 20), by: step) {
+                let i = (y * width + x) * 4
+                for c in 0..<3 { difference += abs(Int(a.bytes[i+c]) - Int(b.bytes[i+c])); count += 1 }
+            }
+            return count > 0 && Double(difference) / Double(count) > 0.8
+        }
+        guard let first = (0..<height).first(where: changed), let last = (0..<height).last(where: changed) else { throw StitchError.unchanged }
+        let rect = CGRect(x: 0, y: first, width: width, height: last - first + 1)
+        guard rect.height >= 80, rect.height >= CGFloat(height) * 0.4, rect.height < CGFloat(height),
+              let before = previous.cropping(to: rect), let after = next.cropping(to: rect) else { throw StitchError.overlap }
+        _ = try overlap(previous: before, next: after)
+        return rect
+    }
     static func append(composite: CGImage, previous: CGImage, next: CGImage) throws -> CGImage {
         let common = try overlap(previous: previous, next: next)
         let added = next.height - common, height = composite.height + added
@@ -66,6 +88,7 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
     private var previous: CGImage
     private var composite: CGImage
     private var busy = false
+    private var contentCrop: CGRect?
     private var automaticTask: Task<Void, Never>?
     private var escapeMonitor: Any?
     private var localEscapeMonitor: Any?
@@ -138,6 +161,8 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
         }
         let mainHeight = NSScreen.screens.first(where: { ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value == CGMainDisplayID() })?.frame.height ?? CGFloat(CGDisplayBounds(CGMainDisplayID()).height)
         let point = ScrollAutomation.point(in: selection.screenRect, mainDisplayHeight: mainHeight)
+        let cursor = NSEvent.mouseLocation
+        let originalPointer = CGPoint(x: cursor.x, y: mainHeight - cursor.y)
         // Identify the visible target before hiding this utility. Never send scrolls
         // to a different app after the user changes focus.
         window.orderOut(nil)
@@ -157,20 +182,32 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
             defer {
                 automaticTask = nil
                 removeMonitors()
+                let cursor = NSEvent.mouseLocation
+                let currentPointer = CGPoint(x: cursor.x, y: mainHeight - cursor.y)
+                if hypot(currentPointer.x - point.x, currentPointer.y - point.y) < 3 { ScrollAutomation.positionPointer(at: originalPointer) }
                 automatic.isEnabled = true; add.isEnabled = true; finish.isEnabled = true
-                status.stringValue = "\(composite.width) × \(composite.height) pixels. " + endMessage
+                status.stringValue = "\(composite.width) × \(composite.height) pixels. " + (contentCrop == nil ? "" : "Fixed top/bottom areas excluded. ") + endMessage
                 if !closed { NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil) }
             }
             do {
                 try await Task.sleep(for: .milliseconds(500))
                 // Refresh the baseline after bringing the target forward.
                 let baseline = try await regionFrame(displayID)
-                do {
-                    let before = previous, joined = composite
-                    let result = try await Task.detached(priority: .userInitiated) { try ScrollStitcher.append(composite: joined, previous: before, next: baseline) }.value
-                    try Task.checkCancellation()
-                    composite = result; previous = baseline
-                } catch ScrollStitcher.StitchError.unchanged { /* Baseline is already represented. */ }
+                if composite.height == previous.height {
+                    // The selection snapshot can be stale after ChatGPT activation
+                    // or a newly received message. Begin with the live viewport;
+                    // don't mistake that UI change for the first scrolling frame.
+                    previous = baseline; composite = baseline
+                } else {
+                    do {
+                        let before = previous, joined = composite
+                        let result = try await Task.detached(priority: .userInitiated) { try ScrollStitcher.append(composite: joined, previous: before, next: baseline) }.value
+                        try Task.checkCancellation()
+                        composite = result; previous = baseline
+                    } catch ScrollStitcher.StitchError.unchanged { /* Baseline is already represented. */ }
+                }
+                ScrollAutomation.positionPointer(at: point)
+                try await Task.sleep(for: .milliseconds(100))
                 for _ in 0..<40 {
                     try Task.checkCancellation()
                     guard !target.isTerminated, NSWorkspace.shared.frontmostApplication?.processIdentifier == target.processIdentifier else {
@@ -179,7 +216,8 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
                     guard ScrollAutomation.target(at: point)?.processIdentifier == target.processIdentifier else {
                         endMessage = "Stopped because another window covers the region."; return
                     }
-                    try ScrollAutomation.scroll(at: point, points: ScrollAutomation.step(for: selection.screenRect.height))
+                    let movingHeight = selection.screenRect.height * (contentCrop?.height ?? selection.pixelRect.height) / selection.pixelRect.height
+                    try ScrollAutomation.scroll(at: point, points: ScrollAutomation.step(for: movingHeight))
                     try await Task.sleep(for: .milliseconds(750))
                     let frame = try await regionFrame(displayID)
                     let before = previous, joined = composite
@@ -187,6 +225,14 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
                         let result = try await Task.detached(priority: .userInitiated) { try ScrollStitcher.append(composite: joined, previous: before, next: frame) }.value
                         try Task.checkCancellation()
                         composite = result; previous = frame
+                    } catch ScrollStitcher.StitchError.overlap where contentCrop == nil && composite.height == previous.height {
+                        let trimmed = try await Task.detached(priority: .userInitiated) {
+                            let crop = try ScrollStitcher.movingCrop(previous: before, next: frame)
+                            guard let a = before.cropping(to: crop), let b = frame.cropping(to: crop) else { throw ScrollStitcher.StitchError.overlap }
+                            return (crop, b, try ScrollStitcher.append(composite: a, previous: a, next: b))
+                        }.value
+                        try Task.checkCancellation()
+                        contentCrop = trimmed.0; previous = trimmed.1; composite = trimmed.2
                     } catch ScrollStitcher.StitchError.unchanged {
                         endMessage = "No further movement detected. Finish to open the captured image."; return
                     }
@@ -201,6 +247,10 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
         let image = try await capture.captureDisplay(displayID)
         guard image.width == Int(selection.displayPixelSize.width), image.height == Int(selection.displayPixelSize.height),
               let result = image.cropping(to: selection.pixelRect) else { throw ScrollStitcher.StitchError.dimensions }
+        if let contentCrop {
+            guard let cropped = result.cropping(to: contentCrop) else { throw ScrollStitcher.StitchError.dimensions }
+            return cropped
+        }
         return result
     }
     private func removeMonitors() {
@@ -229,6 +279,11 @@ enum ScrollAutomation {
             return NSRunningApplication(processIdentifier: pid)
         }
         return nil
+    }
+    static func positionPointer(at point: CGPoint) {
+        // NSScrollView/WKWebView routing depends on the actual hovered view.
+        // Merely assigning a scroll event's location can leave it over SnapForge.
+        CGEvent(mouseEventSource: nil, mouseType: .mouseMoved, mouseCursorPosition: point, mouseButton: .left)?.post(tap: .cghidEventTap)
     }
     static func scroll(at point: CGPoint, points: Int32) throws {
         guard let event = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1, wheel1: -points, wheel2: 0, wheel3: 0) else { throw CocoaError(.coderInvalidValue) }
