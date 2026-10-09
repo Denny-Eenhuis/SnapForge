@@ -28,3 +28,7 @@ A locally compiling, ad-hoc signed package does not establish notarization or co
 ## Installed 0.5.0 follow-up
 
 The user confirmed scrolling works after removing and re-adding both Screen Recording and Device Control/Accessibility permissions. Both prior grants failed following this ad-hoc update. Permission persistence is not verified and remains a signing blocker.
+
+## Additional quality evidence
+
+Installed 0.5.1 Command-C successfully opened the captured image in Preview via New from Clipboard. An optimized 24MP annotation/PNG/JPEG/crop test passed with 0.60 seconds wall time and about 493 MiB peak RSS. See [quality validation](PHASE5_VALIDATION.md); long-scroll and whole-app worst-case memory remain unmeasured.
