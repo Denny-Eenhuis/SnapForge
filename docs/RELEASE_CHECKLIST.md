@@ -24,3 +24,7 @@
 Use `build/Release/SnapForge.zip` and `SnapForge.zip.sha256`. Verify the checksum, extract and install in Applications or a user-owned Applications directory. The receiving Mac needs macOS 14+, not Xcode. Follow [second-Mac checklist](SECOND_MAC_CHECKLIST.md). Follow normal security prompts and organizational approval; do not remove quarantine or weaken Gatekeeper.
 
 A locally compiling, ad-hoc signed package does not establish notarization or corporate approval. Use a consistent approved signing identity for production updates. All login and privacy permission changes belong to the receiving user.
+
+## Installed 0.5.0 follow-up
+
+The user confirmed scrolling works after removing and re-adding both Screen Recording and Device Control/Accessibility permissions. Both prior grants failed following this ad-hoc update. Permission persistence is not verified and remains a signing blocker.

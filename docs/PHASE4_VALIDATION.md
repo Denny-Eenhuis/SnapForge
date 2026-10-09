@@ -27,3 +27,5 @@ A separate Preferences validation app exposed the original Form's clipped label/
 After the layout fix, universal release compilation, extracted-package signature verification, configuration/export tests and the final ZIP checksum passed again. Installed 0.4.7 remains unchanged.
 
 After the user quit, 0.5.0 was installed with a backup at `/private/tmp/SnapForge-before-login-preferences.app`. Strict installed signature verification passed. The app opened Preferences with JPEG, Downloads autosave, automatic scrolling and Cmd-Option M/R/W preserved. Launch at login was observed off and was not enabled. Capture permissions and actual login behavior still require live validation on this installed build.
+
+The user clarified that both Screen Recording and Device Control/Accessibility failed after installing 0.5.0. They removed and re-added both grants, after which scrolling worked. This confirms scrolling functionality after manual permission recovery, not permission persistence across updates. Stable certificate signing remains unresolved; do not mark permission retention as passed.
