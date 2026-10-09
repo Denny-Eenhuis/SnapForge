@@ -7,6 +7,7 @@ final class Preferences: ObservableObject {
     private let defaults: UserDefaults
     @Published var copyAutomatically: Bool { didSet { defaults.set(copyAutomatically, forKey: "copyAutomatically") } }
     @Published var showPreview: Bool { didSet { defaults.set(showPreview, forKey: "showPreview") } }
+    @Published var automaticScrolling: Bool { didSet { defaults.set(automaticScrolling, forKey: "automaticScrolling") } }
     @Published var autoSave: Bool { didSet { defaults.set(autoSave, forKey: "autoSave") } }
     @Published var format: ImageFormat { didSet { defaults.set(format.rawValue, forKey: "format") } }
     @Published var folder: URL? { didSet { defaults.set(folder?.path, forKey: "folder") } }
@@ -17,9 +18,10 @@ final class Preferences: ObservableObject {
     @Published var shortcutModifiers: String { didSet { defaults.set(shortcutModifiers, forKey: "shortcutModifiers") } }
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        defaults.register(defaults: ["copyAutomatically": true, "showPreview": true, "displayKey": "1", "regionKey": "2", "windowKey": "3", "shortcutModifiers": "commandShift", "shortcutsEnabled": true])
+        defaults.register(defaults: ["automaticScrolling": true, "copyAutomatically": true, "showPreview": true, "displayKey": "1", "regionKey": "2", "windowKey": "3", "shortcutModifiers": "commandShift", "shortcutsEnabled": true])
         copyAutomatically = defaults.bool(forKey: "copyAutomatically")
         showPreview = defaults.bool(forKey: "showPreview")
+        automaticScrolling = defaults.bool(forKey: "automaticScrolling")
         autoSave = defaults.bool(forKey: "autoSave")
         format = ImageFormat(rawValue: defaults.string(forKey: "format") ?? "png") ?? .png
         folder = defaults.string(forKey: "folder").map { URL(fileURLWithPath: $0, isDirectory: true) }
@@ -36,7 +38,7 @@ final class PreferencesController {
     private var window: NSWindow?
     func show(apply: @escaping () -> Void) {
         if window == nil {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 560), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 620), styleMask: [.titled, .closable], backing: .buffered, defer: false)
             w.title = "SnapForge Preferences"
             w.isReleasedWhenClosed = false
             w.contentView = NSHostingView(rootView: PreferencesView(apply: apply))
@@ -70,6 +72,8 @@ private struct PreferencesView: View {
                     if panel.runModal() == .OK { preferences.folder = panel.url }
                 }
             }
+            Toggle("Automatically scroll selected capture region", isOn: $preferences.automaticScrolling)
+            Text("Scrolling Capture starts after you drag a region. Escape stops it and opens the result.").font(.caption).foregroundStyle(.secondary)
             Divider()
             Toggle("Enable global capture shortcuts", isOn: $preferences.shortcutsEnabled)
             Picker("Modifiers", selection: $preferences.shortcutModifiers) {
@@ -82,7 +86,7 @@ private struct PreferencesView: View {
             keyPicker("Window", selection: $preferences.windowKey)
             Button("Apply Shortcuts", action: apply)
             Text("Choose different keys for each command. Conflicts with other apps are reported when applying.").font(.caption).foregroundStyle(.secondary)
-        }.padding(20).frame(width: 500, height: 560)
+        }.padding(20).frame(width: 500, height: 620)
     }
     private func keyPicker(_ title: String, selection: Binding<String>) -> some View {
         Picker(title, selection: selection) {

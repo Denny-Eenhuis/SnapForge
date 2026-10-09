@@ -93,6 +93,7 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
     private var escapeMonitor: Any?
     private var localEscapeMonitor: Any?
     private var closed = false
+    private var directAutomaticFlow = false
     private let automatic = NSButton(title: "Start Automatic Scrolling", target: nil, action: nil)
     private let status = NSTextField(wrappingLabelWithString: "")
     private let add = NSButton(title: "Add Frame After Scrolling", target: nil, action: nil)
@@ -113,8 +114,9 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
         positionOutsideRegion()
     }
     func show(automaticallyStart: Bool = false) {
-        window.makeKeyAndOrderFront(nil)
+        directAutomaticFlow = automaticallyStart
         if automaticallyStart { startAutomatic() }
+        else { window.makeKeyAndOrderFront(nil) }
     }
     private func positionOutsideRegion() {
         let screen = NSScreen.screens.first { $0.frame.intersects(selection.screenRect) }
@@ -181,6 +183,7 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
         }
         window.orderOut(nil)
         automaticTask = Task {
+            var deliverAutomatically = false
             var unchangedAttempts = 0
             var endMessage = "Automatic capture stopped. Finish to open the captured image."
             defer {
@@ -191,7 +194,10 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
                 if hypot(currentPointer.x - point.x, currentPointer.y - point.y) < 3 { ScrollAutomation.positionPointer(at: originalPointer) }
                 automatic.isEnabled = true; add.isEnabled = true; finish.isEnabled = true
                 status.stringValue = "\(composite.width) × \(composite.height) pixels. " + (contentCrop == nil ? "" : "Fixed top/bottom areas excluded. ") + endMessage
-                if !closed { NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil) }
+                if !closed {
+                    if directAutomaticFlow && deliverAutomatically { completed?(composite); window.close() }
+                    else { NSApp.activate(ignoringOtherApps: true); window.makeKeyAndOrderFront(nil) }
+                }
             }
             do {
                 try await Task.sleep(for: .milliseconds(1200))
@@ -243,11 +249,14 @@ final class ScrollingCaptureController: NSObject, AdvancedWindowClosing {
                         endMessage = composite.height == previous.height
                             ? "The selected area did not scroll. Select the conversation content and start above its bottom, then retry."
                             : "Reached the end of scrolling. Finish to open the captured image."
+                        deliverAutomatically = composite.height > previous.height
                         return
                     }
                 }
+                deliverAutomatically = true
                 endMessage = "Reached the 40-frame limit. Finish this capture before starting another."
             } catch is CancellationError {
+                deliverAutomatically = true
                 endMessage = "Stopped with Escape. Finish to open the captured image."
             } catch { endMessage = error.localizedDescription }
         }
