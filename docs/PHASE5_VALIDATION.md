@@ -30,3 +30,7 @@ Remaining: stable signing/privacy persistence, actual opt-in login behavior, com
 - Color Picker returned source coordinate (487, 59), HEX #464646 and RGB 70, 70, 70 for a gray selected-row background. Numerical source-color correctness remains covered by known-pixel unit fixtures.
 - Pixel Ruler reported the same 254.1-pixel distance and visibly drew regular ticks along the line.
 - Auxiliary validation windows were closed; the original saved image remains in the editor, ready to paste. No source edits, installed rebuild, privacy mutation or login registration occurred.
+
+## Launch at login registration
+
+The user explicitly authorized enabling launch at login for testing. On opening Preferences, Launch SnapForge at login was already checked; no toggle change was made. There was no pending-approval message or registration error. Read-only macOS background-item inspection (`sfltool dumpbtm`) showed com.snapforge.app as an app item with disposition enabled, allowed, notified. The option remains enabled for a future real sign-in test. Actual launch after logout/login and disable behavior are not yet verified.

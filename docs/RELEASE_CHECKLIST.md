@@ -32,3 +32,5 @@ The user confirmed scrolling works after removing and re-adding both Screen Reco
 ## Additional quality evidence
 
 Installed 0.5.1 Command-C successfully opened the captured image in Preview via New from Clipboard. An optimized 24MP annotation/PNG/JPEG/crop test passed with 0.60 seconds wall time and about 493 MiB peak RSS. See [quality validation](PHASE5_VALIDATION.md); long-scroll and whole-app worst-case memory remain unmeasured.
+
+Launch-at-login registration was observed enabled/allowed in macOS after user consent; actual next-login launch and disable testing remain pending.
