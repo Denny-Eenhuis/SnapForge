@@ -100,7 +100,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 guard let selection = await regionSelector.selectRegion(snapshots), selection.displayID != nil else { return }
                 let controller = ScrollingCaptureController(selection: selection)
                 controller.completed = { [weak owner = self] image in owner?.deliver(image) }
-                AdvancedWindows.shared.retain(controller, window: controller.window); controller.show()
+                AdvancedWindows.shared.retain(controller, window: controller.window); controller.show(automaticallyStart: true)
             } catch { showError(error.localizedDescription) }
         }
     }
