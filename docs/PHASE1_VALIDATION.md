@@ -67,4 +67,8 @@ The user reports another permission error with the toggle enabled after the prev
 
 ### Confirmed final-build preview, PNG and clipboard checks
 
-After reauthorization of the frozen installed build, the user supplied a screenshot showing a normal-sized SnapForge capture preview with Copy and Save As visible. Live AX inspection confirmed both buttons. Copy was activated; Save As successfully saved `/private/tmp/SnapForge-validation.png`. `sips` reported PNG format and 3420×2214 pixels. Preview's New from Clipboard command then opened an Untitled image, confirming clipboard interoperability. No source rebuild or installed-binary replacement occurred during these checks. Region/window capture, automatic saving, JPEG through the live UI, physical global shortcut delivery, multiple monitors and second-Mac runtime still need validation.
+After reauthorization of the frozen installed build, the user supplied a screenshot showing a normal-sized SnapForge capture preview with Copy and Save As visible. Live AX inspection confirmed both buttons. Copy was activated; Save As successfully saved `/private/tmp/SnapForge-validation.png`. `sips` reported PNG format and 3420×2214 pixels. Preview's New from Clipboard command then opened an Untitled image, confirming clipboard interoperability. No source rebuild or installed-binary replacement occurred during these checks. Automatic saving, JPEG through the live UI, physical global shortcut delivery, multiple monitors and second-Mac runtime still need validation.
+
+### User-confirmed region and window capture
+
+The user confirms region capture and window capture both work in the installed, frozen build. These are user-observed live passes; no further details about screen scaling, selection edges, cancellation, disappearing windows or multi-monitor arrangements were supplied. Those edge cases remain unverified. No rebuild or installed-app replacement was performed.
