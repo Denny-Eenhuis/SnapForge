@@ -1,6 +1,6 @@
 # SnapForge
 
-Independent, entirely local macOS menu bar screenshot utility. Phase 2 capture and annotation editor; macOS 14+. See the validation reports for actual test coverage.
+Independent, entirely local macOS menu bar screenshot utility. Capture, annotation editor and Phase 3 advanced tools; macOS 14+. See the validation reports for actual test coverage.
 
 ## Build
 
@@ -21,11 +21,12 @@ Launch the app and click the camera in the menu bar. Capture the main display, c
 - Preview: manages an independent editor session per capture.
 - Editing: pixel-coordinate annotation model, history, AppKit canvas and editor controls.
 - ImageProcessing: Core Graphics compositing and Core Image blur/pixelation.
+- Advanced: local Vision OCR, independent auxiliary windows, pixel inspection and scrolling overlap/stitching.
 - Output: ImageIO PNG/JPEG export and clipboard.
 - Preferences: SwiftUI controls and local UserDefaults persistence.
 - Shortcuts: Carbon global hot-key registration, with conflict reporting.
 
-Future phases can add OCR, scrolling capture, pinned screenshots and measurement tools. No network services or launch-at-login registration are included.
+Advanced tools add local Vision OCR, floating pins with opacity, source-pixel distance/ruler/color inspection, and manual scrolling capture with overlap checks. See `docs/PHASE3_VALIDATION.md` for workflow and limitations. No network services or launch-at-login registration are included.
 
 ## Signing and deployment
 
@@ -35,7 +36,7 @@ For ordinary distribution, use an approved paid Developer ID Application identit
 
 On a second Mac, no Xcode is required. macOS may block an unnotarized or untrusted build, especially under managed-device policy. Use only OS-supported approval when permitted; otherwise obtain IT approval or a properly signed and notarized build. Do not remove quarantine, disable Gatekeeper or bypass management controls.
 
-Run `./scripts/test.sh` for native automated checks. See `docs/SECOND_MAC_CHECKLIST.md`, `docs/PHASE0_VALIDATION.md` , `docs/PHASE1_VALIDATION.md` and `docs/PHASE2_VALIDATION.md` for actual validation and remaining manual checks.
+Run `./scripts/test.sh` for native automated checks. See `docs/SECOND_MAC_CHECKLIST.md`, `docs/PHASE0_VALIDATION.md` , `docs/PHASE1_VALIDATION.md` , `docs/PHASE2_VALIDATION.md` and `docs/PHASE3_VALIDATION.md` for actual validation and remaining manual checks.
 
 Apple references: [Developer ID](https://developer.apple.com/developer-id/) and [macOS distribution](https://developer.apple.com/macos/distribution/).
 
@@ -48,3 +49,5 @@ For ongoing development, use an existing valid Apple Development signing identit
 
 
 Editor checks: `./scripts/test-editing.sh` uses native graphics access, and `./scripts/test-preview.sh` requires a graphical macOS session. `./scripts/build-editor-check.sh` creates a separate synthetic-image UI check app without capture permissions. Captured originals are immutable; annotations stay editable in their open window, and exports are flattened images.
+
+Advanced checks: `./scripts/test-advanced.sh` requires native graphics access for Vision. Phase 3 tools process the edited/cropped output; scrolling capture is selected from the camera menu and requires manual scrolling between frames.

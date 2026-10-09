@@ -14,6 +14,7 @@ final class EditorController: NSObject, NSWindowDelegate {
     private let redoButton = NSButton(title: "Redo", target: nil, action: nil)
     private var tools: [NSButton] = []
     private var exporting = false
+    private let ocrButton = NSButton(title: "Recognize Text", target: nil, action: nil)
     private var magnificationObserver: NSKeyValueObservation?
     var closed: (() -> Void)?
 
@@ -77,6 +78,11 @@ final class EditorController: NSObject, NSWindowDelegate {
         scroll.drawsBackground = true; scroll.backgroundColor = .underPageBackgroundColor
         scroll.documentView = canvas
         scroll.allowsMagnification = true; scroll.minMagnification = 0.25; scroll.maxMagnification = 4
+        let advanced = NSStackView()
+        ocrButton.target = self; ocrButton.action = #selector(recognizeText)
+        advanced.addArrangedSubview(ocrButton)
+        advanced.addArrangedSubview(NSButton(title: "Pin Image", target: self, action: #selector(pinImage)))
+        advanced.addArrangedSubview(NSButton(title: "Measure & Color", target: self, action: #selector(inspectImage)))
         let footer = NSStackView()
         status.lineBreakMode = .byTruncatingMiddle
         status.setContentCompressionResistancePriority(.init(1), for: .horizontal)
@@ -87,14 +93,16 @@ final class EditorController: NSObject, NSWindowDelegate {
             button.setAccessibilityLabel(title == "−" ? "Zoom out" : title == "+" ? "Zoom in" : title)
             footer.addArrangedSubview(button)
         }
-        for view in [upper, lower, scroll, footer] { root.addSubview(view); view.translatesAutoresizingMaskIntoConstraints = false }
-        for stack in [upper, lower, footer] { stack.orientation = .horizontal; stack.spacing = 6 }
+        for view in [upper, lower, advanced, scroll, footer] { root.addSubview(view); view.translatesAutoresizingMaskIntoConstraints = false }
+        for stack in [upper, lower, advanced, footer] { stack.orientation = .horizontal; stack.spacing = 6 }
         NSLayoutConstraint.activate([
             upper.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12), upper.topAnchor.constraint(equalTo: root.topAnchor, constant: 12),
             upper.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -12),
             lower.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12), lower.topAnchor.constraint(equalTo: upper.bottomAnchor, constant: 8),
             lower.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -12),
-            scroll.topAnchor.constraint(equalTo: lower.bottomAnchor, constant: 12), scroll.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
+            advanced.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12), advanced.topAnchor.constraint(equalTo: lower.bottomAnchor, constant: 8),
+            advanced.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -12),
+            scroll.topAnchor.constraint(equalTo: advanced.bottomAnchor, constant: 12), scroll.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12),
             scroll.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12), scroll.bottomAnchor.constraint(equalTo: footer.topAnchor, constant: -12),
             footer.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 12), footer.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -12),
             footer.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -12)
@@ -180,6 +188,28 @@ final class EditorController: NSObject, NSWindowDelegate {
             try ImageOutput.save(result, format: format, to: url)
             document.markSaved(to: url, state: exportingState)
         } catch { showError(error) }
+    }
+    @objc private func recognizeText() {
+        guard ocrButton.isEnabled else { return }
+        do {
+            let image = try AnnotationRenderer.render(source: document.source, state: document.state)
+            ocrButton.isEnabled = false; ocrButton.title = "Recognizing…"
+            Task {
+                defer { ocrButton.isEnabled = true; ocrButton.title = "Recognize Text" }
+                do {
+                    let lines = try await Task.detached(priority: .userInitiated) { try OCRService.recognize(image) }.value
+                    let controller = OCRController(lines: lines); AdvancedWindows.shared.retain(controller, window: controller.window); controller.show()
+                } catch { showError(error) }
+            }
+        } catch { showError(error) }
+    }
+    @objc private func pinImage() {
+        do { let controller = PinController(image: try AnnotationRenderer.render(source: document.source, state: document.state)); AdvancedWindows.shared.retain(controller, window: controller.window); controller.show() }
+        catch { showError(error) }
+    }
+    @objc private func inspectImage() {
+        do { let controller = try InspectionController(image: AnnotationRenderer.render(source: document.source, state: document.state)); AdvancedWindows.shared.retain(controller, window: controller.window); controller.show() }
+        catch { showError(error) }
     }
     private func showError(_ error: Error) { NSAlert(error: error).beginSheetModal(for: window) }
     func windowWillClose(_ notification: Notification) { closed?() }

@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(displays)
         add("Capture Region…", action: #selector(captureRegion), to: menu)
         add("Capture Window…", action: #selector(captureWindow), to: menu)
+        add("Scrolling Capture…", action: #selector(captureScrolling), to: menu)
         menu.addItem(.separator())
         add("Preferences…", action: #selector(preferences), key: ",", to: menu)
         add("Screen Recording Settings…", action: #selector(openPermissions), to: menu)
@@ -83,6 +84,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc private func captureRegion() { capture(.region) }
     @objc private func captureWindow() { capture(.window) }
+    @objc private func captureScrolling() {
+        guard !capturing else { return }
+        guard CGPreflightScreenCaptureAccess() else { showError("Enable SnapForge Screen Recording permission, then quit and reopen the app."); return }
+        capturing = true
+        Task {
+            defer { capturing = false }
+            do {
+                let content = try await captureService.content()
+                let windows = content.windows.filter { $0.windowLayer == 0 && $0.frame.width > 1 && $0.frame.height > 1 && $0.owningApplication?.processID != ProcessInfo.processInfo.processIdentifier }
+                guard let id = await windowPicker.choose(windows) else { return }
+                let controller = ScrollingCaptureController(windowID: id)
+                controller.completed = { [weak owner = self] image in owner?.deliver(image) }
+                AdvancedWindows.shared.retain(controller, window: controller.window); controller.show()
+            } catch { showError(error.localizedDescription) }
+        }
+    }
     private enum CaptureKind { case display(CGDirectDisplayID), region, window }
     private func capture(_ kind: CaptureKind) {
         guard !capturing else { return }
@@ -151,7 +168,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc private func about() {
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "SnapForge", .applicationVersion: "0.3.0", .credits: NSAttributedString(string: "Local screenshot capture. Independently implemented.")])
+        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "SnapForge", .applicationVersion: "0.4.0", .credits: NSAttributedString(string: "Local screenshot capture. Independently implemented.")])
     }
     @objc private func quit() { NSApp.terminate(nil) }
     private func showError(_ message: String) {

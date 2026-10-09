@@ -32,6 +32,14 @@ Command-Z/Shift-Command-Z undo/redo. Command-C copies edited output. Command-S s
 
 ## Remaining
 
+### Installed build validation follow-up
+
+On October 9, the rendering/history/redaction tests, native editor sizing and keyboard-routing tests, and geometry/output/preferences tests were rerun successfully. The installed application's strict code-signature verification also passed. No installed binary was rebuilt or replaced during this follow-up.
+
+The actual installed app displayed its Screen Recording permission-required alert during a capture attempt. The user independently confirmed the same error from the camera menu. Capture-to-editor and edited exports from a real capture therefore remain blocked by the current OS permission state; the passing synthetic tests do not establish those paths.
+
+After the user renewed permission and captured from the camera menu, live inspection confirmed the installed editor opened a 3420 × 2214 capture. Arrow creation, Command-Z undo, Shift-Command-Z redo, blur and pixelation each updated annotation/history state. Cropping changed output dimensions to 1511 × 1008 while preserving three editable annotations. Save As exported `/private/tmp/SnapForge-validation-173138.jpeg`, returned the document to Saved, and retained editable annotations. `sips` confirmed JPEG format and 1511 × 1008 exported pixels. The original automatic save was not overwritten. The capture-to-editor and real edited-export blockers are resolved; no app rebuild was needed.
+
 Validate the final installed app's capture-to-editor path after normal Screen Recording reauthorization if needed. Check annotation exports on actual Retina/multiple-monitor captures, larger memory workloads, detailed redaction strength and font/layout edge cases. Intel/macOS 14 runtime and second-Mac deployment remain pending. Persistent editor-project storage and advanced OCR/scrolling/pinning/measurement features are not implemented yet.
 
 The verified previous capture app is backed up before replacement. No Gatekeeper/quarantine/privacy-policy bypass is used. Ad-hoc rebuilds can require a fresh OS Screen Recording grant; configure a valid stable signing identity for ongoing development.

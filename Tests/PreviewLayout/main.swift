@@ -27,6 +27,16 @@ MainActor.assumeIsolated {
         precondition(controller.canvas.performKeyEquivalent(with: event), "Canvas must handle editor command equivalents")
     }
     precondition(commands == ["undo", "redo", "copy", "save", "saveAs", "fit", "zoomIn", "zoomOut"], "Editor keys must route to the correct command")
+    let pin = PinController(image: image)
+    pin.show()
+    precondition(pin.window.isVisible && pin.window.level == .floating && !pin.window.hidesOnDeactivate, "Pinned image must float and remain visible")
+    precondition(pin.window.styleMask.contains(.resizable) && pin.window.styleMask.contains(.closable), "Pin must resize and close")
+    if let slider = pin.window.contentView?.subviews.compactMap({ $0 as? NSSlider }).first {
+        slider.doubleValue = 0.5
+        _ = slider.target?.perform(slider.action, with: slider)
+        precondition(pin.window.alphaValue == 0.5, "Opacity control must update pin")
+    } else { fatalError("Missing opacity control") }
+    pin.window.close()
     window.close()
-    print("PASS: editor initial sizing, toolbar visibility, fit after resizing, original dimensions, keyboard command routing")
+    print("PASS: editor initial sizing, toolbar visibility, fit after resizing, original dimensions, keyboard command routing, pin visibility/opacity/resize controls")
 }
