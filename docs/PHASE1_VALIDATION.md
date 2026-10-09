@@ -37,3 +37,17 @@ After restarting ChatGPT, quit any older SnapForge instance before launching the
 9. Test Intel/macOS 14 and a second authorized Mac using the deployment checklist.
 
 Limitations: one display per region, sequential frozen display snapshots, on-screen shareable windows only, fixed JPEG quality, US physical key map, no annotation editor/OCR/scrolling capture yet.
+
+## Resumed live validation — October 9, 2026
+
+After the permission restart, computer-use inventory and Finder accessibility inspection responded. SnapForge inspection by the exact current app path continued to return timeoutReached. Bundle-ID lookup reported multiple registered build paths.
+
+Process inspection outside the sandbox identified three running SnapForge builds (Phase 0, an intermediate Phase 1 build and the current build). With user-approved process termination, those test processes were closed. Relaunching the current staged build left exactly one process, `/private/tmp/snapforge-build.9SdcaY/SnapForge.app/Contents/MacOS/SnapForge`, confirmed by pgrep. Its staged signature passed strict verification. SnapForge UI inspection still timed out, so the older instances were not the sole cause.
+
+A window-capture hot-key attempt from Finder did not yield an inspectable SnapForge window. This is inconclusive and does not count as a passed shortcut/capture test. The user was asked to confirm the menu bar icon and open Preferences so inspection can resume against a visible window. No Screen Recording privacy settings were changed during this resumed check. Interactive capture, save, clipboard and shortcut validation remains pending.
+
+### Preferences window and duplicate-instance follow-up
+
+The user supplied a screenshot of the open Preferences window. Computer-use inspection then succeeded and exposed all controls and labels. Clipboard copying and preview were enabled, PNG was selected, automatic saving was off, and global shortcuts were enabled with Command-Shift and keys 1/2/3. Applying shortcuts did not show an error. Automated Command-Shift-1 attempts did not expose a preview or permission dialog, so shortcut/capture behavior is still inconclusive.
+
+The user reported two camera icons. Process inspection confirmed a staged app and the workspace app were running together. The duplicate workspace process was closed with user-approved termination; the staged instance and its Preferences window remained inspectable. A source fix now exits a newly launched copy when another app with the same bundle identifier is running, and reopening SnapForge opens Preferences. The lifecycle changes compile with the universal build; A launch attempt of the updated staged copy while the earlier staged instance was running left exactly one SnapForge process, confirming the new copy exited. Reopen behavior remains pending. The user was asked to run Capture Main Display directly from the remaining menu to distinguish capture failure from shortcut delivery.

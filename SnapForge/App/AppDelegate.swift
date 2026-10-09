@@ -13,6 +13,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var capturing = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Copies of this utility share shortcuts and preferences. Keep one instance.
+        if let bundleID = Bundle.main.bundleIdentifier,
+           let existing = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+            .first(where: { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier && !$0.isTerminated }) {
+            existing.activate(options: [])
+            NSApp.terminate(nil)
+            return
+        }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "SnapForge")
         item.button?.toolTip = "SnapForge — local screenshots"
@@ -42,6 +50,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         applyShortcuts()
     }
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        preferences()
+        return true
+    }
+
     private func add(_ title: String, action: Selector, key: String = "", to menu: NSMenu) {
         menu.addItem(withTitle: title, action: action, keyEquivalent: key).target = self
     }
