@@ -68,3 +68,5 @@ Version 0.4.5 moves automatic scrolling into a persisted Preferences toggle, ena
 Version 0.4.6 increases visible scroll movement to 30% of the viewport (capped at 240 screen points), spread over 300 ms, with 450 ms settling before the next frame. This replaces the 600 ms movement and 1200 ms pause in 0.4.5. Automatic selection and direct editor completion remain enabled. Live pacing and output validation are pending installation.
 
 Version 0.4.7 runs scrolling independently of screenshot/stitching work, using continuous 25 ms pulses without deliberate settling pauses. Each previous scroll distance is covered in 375 ms, twice the nominal average rate of the previous 750 ms move/pause cycle. Frame sampling waits 250 ms between completed processing cycles. Focus/occlusion guards run during movement and capture; cancellation stops the movement task on every exit. Live output and motion validation remain pending.
+
+The user reported that installed 0.4.7 continuous scrolling works. This is user runtime confirmation; the installed binary remains frozen while subsequent UX work is staged separately.

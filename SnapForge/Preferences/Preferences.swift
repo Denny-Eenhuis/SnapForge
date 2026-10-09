@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import ServiceManagement
 
 @MainActor
 final class Preferences: ObservableObject {
@@ -34,11 +35,27 @@ final class Preferences: ObservableObject {
 }
 
 @MainActor
+final class LoginItemController: ObservableObject {
+    @Published private(set) var status = SMAppService.mainApp.status
+    @Published private(set) var errorMessage: String?
+    var requested: Bool { status == .enabled || status == .requiresApproval }
+    func refresh() { status = SMAppService.mainApp.status }
+    func setEnabled(_ enabled: Bool) {
+        errorMessage = nil
+        do {
+            if enabled { try SMAppService.mainApp.register() }
+            else { try SMAppService.mainApp.unregister() }
+        } catch { errorMessage = "Could not change launch at login: \(error.localizedDescription)" }
+        refresh()
+    }
+}
+
+@MainActor
 final class PreferencesController {
     private var window: NSWindow?
     func show(apply: @escaping () -> Void) {
         if window == nil {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 620), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 700), styleMask: [.titled, .closable], backing: .buffered, defer: false)
             w.title = "SnapForge Preferences"
             w.isReleasedWhenClosed = false
             w.contentView = NSHostingView(rootView: PreferencesView(apply: apply))
@@ -53,8 +70,16 @@ final class PreferencesController {
 private struct PreferencesView: View {
     @ObservedObject var preferences = Preferences.shared
     let apply: () -> Void
+    @StateObject private var loginItem = LoginItemController()
     var body: some View {
         Form {
+            Toggle("Launch SnapForge at login", isOn: Binding(get: { loginItem.requested }, set: { loginItem.setEnabled($0) }))
+            if loginItem.status == .requiresApproval {
+                Text("Allow SnapForge in Login Items to finish enabling launch at login.").font(.caption)
+                Button("Open Login Items Settings") { SMAppService.openSystemSettingsLoginItems() }
+            }
+            if let error = loginItem.errorMessage { Text(error).font(.caption).foregroundStyle(.red) }
+            Divider()
             Toggle("Copy captures to clipboard", isOn: $preferences.copyAutomatically)
             Toggle("Show preview after capture", isOn: $preferences.showPreview)
             Picker("Output format", selection: $preferences.format) {
@@ -86,7 +111,9 @@ private struct PreferencesView: View {
             keyPicker("Window", selection: $preferences.windowKey)
             Button("Apply Shortcuts", action: apply)
             Text("Choose different keys for each command. Conflicts with other apps are reported when applying.").font(.caption).foregroundStyle(.secondary)
-        }.padding(20).frame(width: 500, height: 620)
+        }.padding(20).frame(width: 500, height: 700)
+        .onAppear { loginItem.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in loginItem.refresh() }
     }
     private func keyPicker(_ title: String, selection: Binding<String>) -> some View {
         Picker(title, selection: selection) {
