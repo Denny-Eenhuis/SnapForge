@@ -30,7 +30,8 @@ enum ImageOutput {
     static func save(_ image: CGImage, format: ImageFormat, to url: URL) throws {
         try data(image, format: format).write(to: url, options: .atomic)
     }
-    static func filename(format: ImageFormat) -> String {
-        "SnapForge-\(ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-"))-\(UUID().uuidString.prefix(6)).\(format.rawValue)"
+    static func filename(format: ImageFormat, savedURL: URL? = nil) -> String {
+        if let savedURL { return savedURL.deletingPathExtension().lastPathComponent + "." + format.rawValue }
+        return "SnapForge-\(ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-"))-\(UUID().uuidString.prefix(6)).\(format.rawValue)"
     }
 }

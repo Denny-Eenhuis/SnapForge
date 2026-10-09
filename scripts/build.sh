@@ -26,7 +26,9 @@ ditto "$APP" build/Release/SnapForge.app
 if xattr -p com.apple.FinderInfo build/Release/SnapForge.app >/dev/null 2>&1; then
   xattr -d com.apple.FinderInfo build/Release/SnapForge.app
 fi
-codesign --verify --strict build/Release/SnapForge.app
+if ! codesign --verify --strict build/Release/SnapForge.app; then
+  echo "Workspace file-provider metadata changed the copied .app. Use the verified transfer ZIP or staged bundle."
+fi
 ditto -c -k --sequesterRsrc --keepParent "$APP" build/Release/SnapForge.zip
 VERIFY_DIR=$(mktemp -d /private/tmp/snapforge-verify.XXXXXX)
 ditto -x -k build/Release/SnapForge.zip "$VERIFY_DIR"

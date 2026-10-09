@@ -4,9 +4,13 @@ import AppKit
 final class PreviewController {
     private var window: NSWindow?
     private var image: CGImage?
+    private var savedURL: URL?
+    private var captureID = UUID()
 
-    func show(_ captured: CGImage) {
+    func show(_ captured: CGImage, savedURL: URL? = nil) {
         image = captured
+        self.savedURL = savedURL
+        captureID = UUID()
         let view = NSImageView()
         view.image = NSImage(cgImage: captured, size: NSSize(width: captured.width, height: captured.height))
         view.imageScaling = .scaleProportionallyUpOrDown
@@ -14,6 +18,14 @@ final class PreviewController {
         let save = NSButton(title: "Save As…", target: self, action: #selector(saveImage))
         let copy = NSButton(title: "Copy", target: self, action: #selector(copyImage))
         let buttons = NSStackView(views: [copy, save])
+        if let savedURL {
+            let saved = NSTextField(labelWithString: "Saved: " + savedURL.lastPathComponent)
+            saved.lineBreakMode = .byTruncatingMiddle
+            saved.textColor = .secondaryLabelColor
+            saved.setContentCompressionResistancePriority(.init(1), for: .horizontal)
+            saved.toolTip = savedURL.path
+            buttons.insertArrangedSubview(saved, at: 0)
+        }
         buttons.orientation = .horizontal
         let content = NSView()
         content.addSubview(view)
@@ -30,6 +42,7 @@ final class PreviewController {
             view.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
             view.topAnchor.constraint(equalTo: content.topAnchor, constant: 16),
             view.bottomAnchor.constraint(equalTo: buttons.topAnchor, constant: -12),
+            buttons.leadingAnchor.constraint(greaterThanOrEqualTo: content.leadingAnchor, constant: 16),
             buttons.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
             buttons.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -16)
         ])
@@ -56,13 +69,17 @@ final class PreviewController {
     @objc private func saveImage() {
         guard let image, let window else { return }
         let format = Preferences.shared.format
+        let session = captureID
         let panel = NSSavePanel()
         panel.allowedContentTypes = [format.contentType]
-        panel.directoryURL = Preferences.shared.folder
-        panel.nameFieldStringValue = ImageOutput.filename(format: format)
+        panel.directoryURL = savedURL?.deletingLastPathComponent() ?? Preferences.shared.folder
+        panel.nameFieldStringValue = ImageOutput.filename(format: format, savedURL: savedURL)
         panel.beginSheetModal(for: window) { response in
             guard response == .OK, let url = panel.url else { return }
-            do { try ImageOutput.save(image, format: format, to: url) }
+            do {
+                try ImageOutput.save(image, format: format, to: url)
+                if self.captureID == session { self.savedURL = url }
+            }
             catch { NSAlert(error: error).beginSheetModal(for: window) }
         }
     }

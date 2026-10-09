@@ -51,6 +51,10 @@ func testEncoding() throws {
     try expect(rejected, "Missing output folder must throw")
 }
 
+let existingSave = URL(fileURLWithPath: "/private/tmp/SnapForge-existing.png")
+try expect(ImageOutput.filename(format: .png, savedURL: existingSave) == existingSave.lastPathComponent, "Save As must reuse an automatically saved filename")
+try expect(ImageOutput.filename(format: .jpeg, savedURL: existingSave) == "SnapForge-existing.jpeg", "Format changes must retain the basename")
+try expect(ImageOutput.filename(format: .png) != ImageOutput.filename(format: .png), "Independent captures must retain unique filenames")
 try testGeometry()
 try testEncoding()
 try MainActor.assumeIsolated {

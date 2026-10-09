@@ -7,7 +7,7 @@ MainActor.assumeIsolated {
         fatalError("Cannot create large test image")
     }
     let controller = PreviewController()
-    controller.show(image)
+    controller.show(image, savedURL: URL(fileURLWithPath: "/private/tmp/SnapForge-2026-10-09T16-43-29Z-15A938.png"))
     guard let window = app.windows.first(where: { $0.title == "SnapForge — Capture" }), let content = window.contentView else { fatalError("Preview missing") }
     content.layoutSubtreeIfNeeded()
     let size = content.bounds.size

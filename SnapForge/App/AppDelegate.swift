@@ -119,17 +119,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func deliver(_ image: CGImage) {
         let settings = Preferences.shared
         var errors: [String] = []
+        var savedURL: URL?
         if settings.copyAutomatically {
             do { try ImageOutput.copy(image) } catch { errors.append("Clipboard: \(error.localizedDescription)") }
         }
         if settings.autoSave {
             if let folder = settings.folder {
-                do { try ImageOutput.save(image, format: settings.format, to: folder.appendingPathComponent(ImageOutput.filename(format: settings.format))) }
+                do {
+                    let destination = folder.appendingPathComponent(ImageOutput.filename(format: settings.format))
+                    try ImageOutput.save(image, format: settings.format, to: destination)
+                    savedURL = destination
+                }
                 catch { errors.append("Automatic save: \(error.localizedDescription)") }
             } else { errors.append("Choose an automatic save folder in Preferences.") }
         }
         // Keep the capture recoverable if there is no output or any output failed.
-        if settings.showPreview || !errors.isEmpty || (!settings.copyAutomatically && !settings.autoSave) { preview.show(image) }
+        if settings.showPreview || !errors.isEmpty || (!settings.copyAutomatically && !settings.autoSave) { preview.show(image, savedURL: savedURL) }
         if !errors.isEmpty { showError(errors.joined(separator: "\n")) }
     }
     @objc private func preferences() { preferencesController.show { [weak self] in self?.applyShortcuts() } }
