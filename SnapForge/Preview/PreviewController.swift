@@ -2,85 +2,23 @@ import AppKit
 
 @MainActor
 final class PreviewController {
-    private var window: NSWindow?
-    private var image: CGImage?
-    private var savedURL: URL?
-    private var captureID = UUID()
-
+    private var editors: [EditorController] = []
+    func canQuit() -> Bool {
+        guard editors.contains(where: { $0.document.isDirty }) else { return true }
+        let alert = NSAlert()
+        alert.messageText = "Discard unsaved annotations and quit?"
+        alert.informativeText = "Choose Keep Editing to save your edited screenshots before quitting."
+        alert.addButton(withTitle: "Keep Editing")
+        alert.addButton(withTitle: "Discard and Quit")
+        return alert.runModal() == .alertSecondButtonReturn
+    }
     func show(_ captured: CGImage, savedURL: URL? = nil) {
-        image = captured
-        self.savedURL = savedURL
-        captureID = UUID()
-        let view = NSImageView()
-        view.image = NSImage(cgImage: captured, size: NSSize(width: captured.width, height: captured.height))
-        view.imageScaling = .scaleProportionallyUpOrDown
-        view.setAccessibilityLabel("Captured screenshot")
-        let save = NSButton(title: "Save As…", target: self, action: #selector(saveImage))
-        let copy = NSButton(title: "Copy", target: self, action: #selector(copyImage))
-        let buttons = NSStackView(views: [copy, save])
-        if let savedURL {
-            let saved = NSTextField(labelWithString: "Saved: " + savedURL.lastPathComponent)
-            saved.lineBreakMode = .byTruncatingMiddle
-            saved.textColor = .secondaryLabelColor
-            saved.setContentCompressionResistancePriority(.init(1), for: .horizontal)
-            saved.toolTip = savedURL.path
-            buttons.insertArrangedSubview(saved, at: 0)
+        editors.removeAll { !$0.window.isVisible && !$0.document.isDirty }
+        let editor = EditorController(image: captured, savedURL: savedURL)
+        editor.closed = { [weak self, weak editor] in
+            self?.editors.removeAll { $0 === editor }
         }
-        buttons.orientation = .horizontal
-        let content = NSView()
-        content.addSubview(view)
-        content.addSubview(buttons)
-        view.translatesAutoresizingMaskIntoConstraints = false
-        buttons.translatesAutoresizingMaskIntoConstraints = false
-        // Ignore the screenshot's intrinsic pixel size when laying out the preview.
-        view.setContentHuggingPriority(.init(1), for: .horizontal)
-        view.setContentHuggingPriority(.init(1), for: .vertical)
-        view.setContentCompressionResistancePriority(.init(1), for: .horizontal)
-        view.setContentCompressionResistancePriority(.init(1), for: .vertical)
-        NSLayoutConstraint.activate([
-            view.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
-            view.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
-            view.topAnchor.constraint(equalTo: content.topAnchor, constant: 16),
-            view.bottomAnchor.constraint(equalTo: buttons.topAnchor, constant: -12),
-            buttons.leadingAnchor.constraint(greaterThanOrEqualTo: content.leadingAnchor, constant: 16),
-            buttons.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
-            buttons.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -16)
-        ])
-        let isNew = window == nil
-        let preview = window ?? NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 600), styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
-        preview.isReleasedWhenClosed = false
-        preview.title = "SnapForge — Capture"
-        preview.contentMinSize = NSSize(width: 320, height: 240)
-        preview.contentView = content
-        if isNew {
-            let available = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame.size ?? NSSize(width: 1200, height: 800)
-            preview.setContentSize(NSSize(width: min(900, available.width * 0.8), height: min(600, available.height * 0.8)))
-            preview.center()
-        }
-        window = preview
-        NSApp.activate(ignoringOtherApps: true)
-        preview.makeKeyAndOrderFront(nil)
-    }
-
-    @objc private func copyImage() {
-        guard let image else { return }
-        do { try ImageOutput.copy(image) } catch { NSAlert(error: error).runModal() }
-    }
-    @objc private func saveImage() {
-        guard let image, let window else { return }
-        let format = Preferences.shared.format
-        let session = captureID
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [format.contentType]
-        panel.directoryURL = savedURL?.deletingLastPathComponent() ?? Preferences.shared.folder
-        panel.nameFieldStringValue = ImageOutput.filename(format: format, savedURL: savedURL)
-        panel.beginSheetModal(for: window) { response in
-            guard response == .OK, let url = panel.url else { return }
-            do {
-                try ImageOutput.save(image, format: format, to: url)
-                if self.captureID == session { self.savedURL = url }
-            }
-            catch { NSAlert(error: error).beginSheetModal(for: window) }
-        }
+        editors.append(editor)
+        editor.show()
     }
 }

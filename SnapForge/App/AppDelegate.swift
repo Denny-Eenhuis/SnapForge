@@ -50,6 +50,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         applyShortcuts()
     }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        preview.canQuit() ? .terminateNow : .terminateCancel
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         shortcuts.shutdown()
     }
@@ -147,7 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc private func about() {
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "SnapForge", .applicationVersion: "0.2.0", .credits: NSAttributedString(string: "Local screenshot capture. Independently implemented.")])
+        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "SnapForge", .applicationVersion: "0.3.0", .credits: NSAttributedString(string: "Local screenshot capture. Independently implemented.")])
     }
     @objc private func quit() { NSApp.terminate(nil) }
     private func showError(_ message: String) {
