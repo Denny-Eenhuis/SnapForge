@@ -1,4 +1,5 @@
 import AppKit
+import ImageIO
 
 func check(_ condition: @autoclosure () -> Bool, _ message: String) {
     if !condition() { fputs("FAIL: \(message)\n", stderr); exit(1) }
@@ -46,3 +47,22 @@ check(text.contains("SnapForge") && text.contains("12345"), "Vision recognizes r
 let white = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 100, pixelsHigh: 100, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)
 if let blank = white?.cgImage { let lines = try OCRService.recognize(blank); check(lines.isEmpty, "blank OCR result") }
 print("PASS: Vision text recognition, blank OCR, color bounds, overlap, three-frame seams, unchanged/dimension/unrelated rejection")
+
+let browserFixture = "Tests/Advanced/Fixtures/browser-before.png"
+if CommandLine.arguments.count == 3 || FileManager.default.fileExists(atPath: browserFixture) {
+    func loadFrame(_ path: String) throws -> CGImage {
+        guard let source = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil), let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { throw CocoaError(.fileReadCorruptFile) }
+        return image
+    }
+    let supplied = CommandLine.arguments.count == 3
+    let first = try loadFrame(supplied ? CommandLine.arguments[1] : browserFixture)
+    let next = try loadFrame(supplied ? CommandLine.arguments[2] : "Tests/Advanced/Fixtures/browser-after.png")
+    let common = try ScrollStitcher.overlap(previous: first, next: next)
+    if !supplied { check(first.height - common == 216, "real browser scroll offset") }
+    let result = try ScrollStitcher.append(composite: first, previous: first, next: next)
+    let output = URL(fileURLWithPath: "/private/tmp/snapforge-browser-stitched.png")
+    guard let destination = CGImageDestinationCreateWithURL(output as CFURL, "public.png" as CFString, 1, nil) else { fatalError("Browser result destination") }
+    CGImageDestinationAddImage(destination, result, nil)
+    check(CGImageDestinationFinalize(destination), "browser export")
+    print("PASS: real browser overlap \(common), shift \(first.height - common), output \(result.width) × \(result.height)")
+}
