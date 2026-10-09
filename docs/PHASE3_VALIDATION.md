@@ -30,3 +30,13 @@ After the user quit the previous app, version 0.4.0 was installed at `/Users/den
 ## Region scrolling revision
 
 At the user’s request, scrolling capture now begins with the existing region-selection overlay rather than the window picker. Selection returns the cropped first image, source display ID, original display pixel size, fixed crop rectangle and screen-space bounds. Ordinary region capture still returns the image through its existing interface. The session hides its controls while recapturing that display and cropping the same rectangle; it tries to place controls outside the region. A native integration check passed immediate first-frame availability and Finish delivery without a second capture. Geometry, OCR/color/stitching regression checks and universal compilation passed. Live region selection/scrolling remains pending.
+
+Version 0.4.1 was installed after the user quit SnapForge. Strict installed signature verification passed and launch showed the preserved preferences and shortcuts. The previous build is backed up at `/private/tmp/SnapForge-before-region-scrolling.app`. The installed binary is frozen for live region-scrolling validation.
+
+## Automatic scrolling revision
+
+The manual-only workflow did not match the user's expectation. Inspection confirmed the first region image existed, and adding a subsequent frame reported unreliable overlap. Version 0.4.2 adds a Start Automatic Scrolling button beside the manual capture controls.
+
+Automatic mode requires the user's normal macOS Accessibility grant. It finds the visible target at the region center, brings that app forward, hides SnapForge controls, scrolls downward by 30% of region height (maximum 400 screen points), waits 750 ms and captures/stitches the fixed region. It preserves already accepted images and rejects unreliable new frames. Escape cancels; reaching unchanged content, a changed foreground app, an occluding app, a 40-frame cap, capture errors or stitching errors returns to the controls with the retained result. Finish opens the captured image. Closing the session cancels work and removes event monitors. No privacy grant is created or bypassed by code.
+
+Universal compilation/signature packaging and OCR/stitching/editor regressions passed. Pure geometry checks verify top-left event coordinates for a display left of the main display and scroll-step overlap/capping; these tests do not post OS events. Automatic scrolling and Accessibility recovery are not yet runtime-verified. The working installed app remains at the previous revision until the user quits it for replacement.

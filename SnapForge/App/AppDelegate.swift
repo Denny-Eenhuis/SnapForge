@@ -172,7 +172,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc private func about() {
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "SnapForge", .applicationVersion: "0.4.1", .credits: NSAttributedString(string: "Local screenshot capture. Independently implemented.")])
+        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "SnapForge", .applicationVersion: "0.4.2", .credits: NSAttributedString(string: "Local screenshot capture. Independently implemented.")])
     }
     @objc private func quit() { NSApp.terminate(nil) }
     private func showError(_ message: String) {

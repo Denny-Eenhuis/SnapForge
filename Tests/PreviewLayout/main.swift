@@ -27,6 +27,8 @@ MainActor.assumeIsolated {
         precondition(controller.canvas.performKeyEquivalent(with: event), "Canvas must handle editor command equivalents")
     }
     precondition(commands == ["undo", "redo", "copy", "save", "saveAs", "fit", "zoomIn", "zoomOut"], "Editor keys must route to the correct command")
+    precondition(ScrollAutomation.point(in: CGRect(x: -1000, y: 200, width: 400, height: 300), mainDisplayHeight: 1000) == CGPoint(x: -800, y: 650), "Automatic scroll coordinates must convert multi-display AppKit origin")
+    precondition(ScrollAutomation.step(for: 600) == 180 && ScrollAutomation.step(for: 2000) == 400, "Scroll steps must retain overlap and cap large moves")
     let selection = RegionSelector.Selection(image: image, pixelRect: CGRect(x: 100, y: 200, width: 4000, height: 3000), screenRect: CGRect(x: 100, y: 100, width: 600, height: 400), displayID: 1, displayPixelSize: CGSize(width: 5000, height: 4000))
     let scrolling = ScrollingCaptureController(selection: selection)
     var delivered: CGImage?

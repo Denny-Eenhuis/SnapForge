@@ -26,7 +26,7 @@ Launch the app and click the camera in the menu bar. Capture the main display, c
 - Preferences: SwiftUI controls and local UserDefaults persistence.
 - Shortcuts: Carbon global hot-key registration, with conflict reporting.
 
-Advanced tools add local Vision OCR, floating pins with opacity, source-pixel distance/ruler/color inspection, and manual scrolling capture with overlap checks. See `docs/PHASE3_VALIDATION.md` for workflow and limitations. No network services or launch-at-login registration are included.
+Advanced tools add local Vision OCR, floating pins with opacity, source-pixel distance/ruler/color inspection, and region scrolling capture with overlap checks. See `docs/PHASE3_VALIDATION.md` for workflow and limitations. No network services or launch-at-login registration are included.
 
 ## Signing and deployment
 
@@ -50,4 +50,4 @@ For ongoing development, use an existing valid Apple Development signing identit
 
 Editor checks: `./scripts/test-editing.sh` uses native graphics access, and `./scripts/test-preview.sh` requires a graphical macOS session. `./scripts/build-editor-check.sh` creates a separate synthetic-image UI check app without capture permissions. Captured originals are immutable; annotations stay editable in their open window, and exports are flattened images.
 
-Advanced checks: `./scripts/test-advanced.sh` requires native graphics access for Vision. Phase 3 tools process the edited/cropped output; scrolling capture is selected from the camera menu and requires manual scrolling between frames.
+Advanced checks: `./scripts/test-advanced.sh` requires native graphics access for Vision. Phase 3 tools process the edited/cropped output; scrolling capture is selected from the camera menu and supports automatic scrolling after the normal macOS Accessibility grant.
