@@ -21,14 +21,10 @@ fi
 codesign --force --sign "$SIGNING_IDENTITY" "$APP"
 codesign --verify --strict "$APP"
 xcrun lipo -info "$APP/Contents/MacOS/SnapForge"
-ditto "$APP" build/Release/SnapForge.app
-# File-provider folders can attach Finder metadata to copied app bundles.
-if xattr -p com.apple.FinderInfo build/Release/SnapForge.app >/dev/null 2>&1; then
-  xattr -d com.apple.FinderInfo build/Release/SnapForge.app
-fi
-if ! codesign --verify --strict build/Release/SnapForge.app; then
-  echo "Workspace file-provider metadata changed the copied .app. Use the verified transfer ZIP or staged bundle."
-fi
+# Keep runnable bundles out of the synced workspace: its file provider can
+# invalidate signatures by attaching Finder metadata, and LaunchServices can
+# accidentally reopen that duplicate instead of the permission-approved copy.
+echo "Verified app bundle: $APP"
 ditto -c -k --sequesterRsrc --keepParent "$APP" build/Release/SnapForge.zip
 VERIFY_DIR=$(mktemp -d /private/tmp/snapforge-verify.XXXXXX)
 ditto -x -k build/Release/SnapForge.zip "$VERIFY_DIR"
