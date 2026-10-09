@@ -36,3 +36,10 @@ On a second Mac, no Xcode is required. macOS may block an unnotarized or untrust
 Run `./scripts/test.sh` for native automated checks. See `docs/SECOND_MAC_CHECKLIST.md`, `docs/PHASE0_VALIDATION.md` and `docs/PHASE1_VALIDATION.md` for actual validation and remaining manual checks.
 
 Apple references: [Developer ID](https://developer.apple.com/developer-id/) and [macOS distribution](https://developer.apple.com/macos/distribution/).
+
+
+## Development permission stability
+
+The build script defaults to ad-hoc signing. Its designated requirement contains the binary's code-directory hash, which can change when code is rebuilt. An enabled Screen Recording entry may then refer to an earlier build. Freeze the installed binary during permission/capture validation; grant access to the final copy in your user Applications folder and quit/reopen that app through the supported macOS flow. Do not rebuild between the grant and the test.
+
+For ongoing development, use an existing valid Apple Development signing identity rather than ad-hoc signing. The script accepts `SNAPFORGE_SIGNING_IDENTITY` as the identity name or certificate hash supplied to codesign. The certificate and its private key must already exist in the login keychain; this script does not create, import, or trust certificates. On October 9, 2026, this Mac reported zero valid code-signing identities. Developer ID remains the appropriate separately configured distribution route. Signing identity changes can require a fresh permission grant even when the app path remains stable.
