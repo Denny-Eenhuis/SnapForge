@@ -15,3 +15,15 @@
 - Repeat on Intel if available. Report actual hardware, OS, signing method and results.
 
 No Xcode or administrator access is required for normal operation; corporate policy can impose additional restrictions.
+
+## Full-feature verification
+
+- Verify region and window capture, physical configured shortcuts and cancellation.
+- Test automatic save followed by Save As; verify the same suggested filename is reused.
+- Annotate, undo/redo, crop, copy and export both formats; inspect redaction and dimensions.
+- Start scrolling above the bottom of a conversation, select its scrolling area, and check several stitched seams. Grant Device Control/Accessibility only through the normal settings flow. Verify Escape stops and opens the result.
+- Recognize a known text image, select/copy part and copy all; confirm local output.
+- Pin an image, adjust opacity, resize, move and close. Check ruler/distance/color readings on known source pixels.
+- Inspect Preferences in light/dark mode and navigate controls with VoiceOver.
+- If the user opts in, enable Launch at login, check any required system approval, log out/in and verify one running instance. Disable it and verify the next login does not launch the app.
+- Record hardware, OS, signing identity, permissions and pass/fail evidence.

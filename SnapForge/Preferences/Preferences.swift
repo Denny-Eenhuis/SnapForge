@@ -72,7 +72,7 @@ private struct PreferencesView: View {
     let apply: () -> Void
     @StateObject private var loginItem = LoginItemController()
     var body: some View {
-        Form {
+        VStack(alignment: .leading, spacing: 10) {
             Toggle("Launch SnapForge at login", isOn: Binding(get: { loginItem.requested }, set: { loginItem.setEnabled($0) }))
             if loginItem.status == .requiresApproval {
                 Text("Allow SnapForge in Login Items to finish enabling launch at login.").font(.caption)
@@ -98,7 +98,7 @@ private struct PreferencesView: View {
                 }
             }
             Toggle("Automatically scroll selected capture region", isOn: $preferences.automaticScrolling)
-            Text("Scrolling Capture starts after you drag a region. Escape stops it and opens the result.").font(.caption).foregroundStyle(.secondary)
+            Text("Scrolling Capture starts after you drag a region. Escape stops it and opens the result.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Divider()
             Toggle("Enable global capture shortcuts", isOn: $preferences.shortcutsEnabled)
             Picker("Modifiers", selection: $preferences.shortcutModifiers) {
@@ -110,8 +110,8 @@ private struct PreferencesView: View {
             keyPicker("Region", selection: $preferences.regionKey)
             keyPicker("Window", selection: $preferences.windowKey)
             Button("Apply Shortcuts", action: apply)
-            Text("Choose different keys for each command. Conflicts with other apps are reported when applying.").font(.caption).foregroundStyle(.secondary)
-        }.padding(20).frame(width: 500, height: 700)
+            Text("Choose different keys for each command. Conflicts with other apps are reported when applying.").font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }.padding(20).frame(width: 500, height: 700, alignment: .topLeading)
         .onAppear { loginItem.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in loginItem.refresh() }
     }
