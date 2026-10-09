@@ -15,17 +15,35 @@ final class PreviewController {
         let copy = NSButton(title: "Copy", target: self, action: #selector(copyImage))
         let buttons = NSStackView(views: [copy, save])
         buttons.orientation = .horizontal
-        let content = NSStackView(views: [view, buttons])
-        content.orientation = .vertical
-        content.spacing = 12
-        content.edgeInsets = NSEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+        let content = NSView()
+        content.addSubview(view)
+        content.addSubview(buttons)
         view.translatesAutoresizingMaskIntoConstraints = false
-        view.heightAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+        buttons.translatesAutoresizingMaskIntoConstraints = false
+        // Ignore the screenshot's intrinsic pixel size when laying out the preview.
+        view.setContentHuggingPriority(.init(1), for: .horizontal)
+        view.setContentHuggingPriority(.init(1), for: .vertical)
+        view.setContentCompressionResistancePriority(.init(1), for: .horizontal)
+        view.setContentCompressionResistancePriority(.init(1), for: .vertical)
+        NSLayoutConstraint.activate([
+            view.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
+            view.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
+            view.topAnchor.constraint(equalTo: content.topAnchor, constant: 16),
+            view.bottomAnchor.constraint(equalTo: buttons.topAnchor, constant: -12),
+            buttons.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
+            buttons.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -16)
+        ])
+        let isNew = window == nil
         let preview = window ?? NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 600), styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         preview.isReleasedWhenClosed = false
         preview.title = "SnapForge — Capture"
+        preview.contentMinSize = NSSize(width: 320, height: 240)
         preview.contentView = content
-        if window == nil { preview.center() }
+        if isNew {
+            let available = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame.size ?? NSSize(width: 1200, height: 800)
+            preview.setContentSize(NSSize(width: min(900, available.width * 0.8), height: min(600, available.height * 0.8)))
+            preview.center()
+        }
         window = preview
         NSApp.activate(ignoringOtherApps: true)
         preview.makeKeyAndOrderFront(nil)
