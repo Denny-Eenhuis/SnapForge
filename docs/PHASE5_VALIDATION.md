@@ -20,3 +20,13 @@ Measured on the development Mac:
 The simple synthetic fixture compresses well; these results do not establish photo-heavy export throughput, long-scroll memory behavior, or whole-app worst-case memory use. Source pixels, render buffers and decoded output intentionally coexist in this test. No installed binary was changed.
 
 Remaining: stable signing/privacy persistence, actual opt-in login behavior, complete VoiceOver interaction, physical multiple monitors, Intel runtime, authorized second Mac and full Xcode build.
+
+## Installed 0.5.1 advanced UI checks
+
+- Recognize Text on the 1484 × 142 Finder capture completed and exposed expected words Applications, SnapForge and Downloads. Initial recognition was unusually slow: a short process sample showed Apple's TextRecognition/Espresso on-device compilation waiting on a system reply, while the app remained responsive. Recognition eventually finished during the other checks. Text cut off at the screenshot's lower edge produced OCR errors; this is not a claim of perfect recognition or reading order.
+- Selected the recognized word SnapForge through the selectable text view and exercised Copy Selection. A separate destination paste for that text was not verified. Image clipboard was restored afterward with editor Command-C.
+- Pin Image opened a floating window, the opacity slider changed from 1 to 0.5, and its close control returned to the editor. Resize/movement remained covered by prior native tests rather than repeated in this live check.
+- Measure & Color opened successfully. A horizontal 300 screenshot-pixel drag across a 1752 screenshot-pixel display of the 1484 source-pixel image reported 254.1 source pixels, matching the displayed scale.
+- Color Picker returned source coordinate (487, 59), HEX #464646 and RGB 70, 70, 70 for a gray selected-row background. Numerical source-color correctness remains covered by known-pixel unit fixtures.
+- Pixel Ruler reported the same 254.1-pixel distance and visibly drew regular ticks along the line.
+- Auxiliary validation windows were closed; the original saved image remains in the editor, ready to paste. No source edits, installed rebuild, privacy mutation or login registration occurred.
