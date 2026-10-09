@@ -91,10 +91,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         Task {
             defer { capturing = false }
             do {
-                let content = try await captureService.content()
-                let windows = content.windows.filter { $0.windowLayer == 0 && $0.frame.width > 1 && $0.frame.height > 1 && $0.owningApplication?.processID != ProcessInfo.processInfo.processIdentifier }
-                guard let id = await windowPicker.choose(windows) else { return }
-                let controller = ScrollingCaptureController(windowID: id)
+                try await Task.sleep(for: .milliseconds(250))
+                var snapshots: [RegionSelector.Snapshot] = []
+                for screen in NSScreen.screens {
+                    guard let id = (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value else { continue }
+                    snapshots.append(.init(frame: screen.frame, image: try await captureService.captureDisplay(id), displayID: id))
+                }
+                guard let selection = await regionSelector.selectRegion(snapshots), selection.displayID != nil else { return }
+                let controller = ScrollingCaptureController(selection: selection)
                 controller.completed = { [weak owner = self] image in owner?.deliver(image) }
                 AdvancedWindows.shared.retain(controller, window: controller.window); controller.show()
             } catch { showError(error.localizedDescription) }
@@ -120,7 +124,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     var snapshots: [RegionSelector.Snapshot] = []
                     for screen in NSScreen.screens {
                         guard let id = (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value else { continue }
-                        snapshots.append(.init(frame: screen.frame, image: try await captureService.captureDisplay(id)))
+                        snapshots.append(.init(frame: screen.frame, image: try await captureService.captureDisplay(id), displayID: id))
                     }
                     image = await regionSelector.select(snapshots)
                 case .window:
@@ -168,7 +172,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc private func about() {
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "SnapForge", .applicationVersion: "0.4.0", .credits: NSAttributedString(string: "Local screenshot capture. Independently implemented.")])
+        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "SnapForge", .applicationVersion: "0.4.1", .credits: NSAttributedString(string: "Local screenshot capture. Independently implemented.")])
     }
     @objc private func quit() { NSApp.terminate(nil) }
     private func showError(_ message: String) {

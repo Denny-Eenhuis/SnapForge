@@ -58,55 +58,64 @@ struct ScrollStitcher {
 }
 
 @MainActor
-final class ScrollingCaptureController: NSObject, NSWindowDelegate {
+final class ScrollingCaptureController: NSObject {
     let window: NSWindow
-    private let windowID: CGWindowID
+    private let selection: RegionSelector.Selection
     private let capture = CaptureService()
-    private var previous: CGImage?
-    private var composite: CGImage?
+    private var previous: CGImage
+    private var composite: CGImage
     private var busy = false
-    private let top = NSTextField(string: "0"), bottom = NSTextField(string: "0")
-    private let status = NSTextField(wrappingLabelWithString: "Set fixed header/footer exclusions in image pixels. Capture the first frame, scroll the target window down by less than half a viewport, then add a frame. Keep its size unchanged. No automatic scrolling or Accessibility permission is required.")
-    private let add = NSButton(title: "Capture First Frame", target: nil, action: nil)
+    private let status = NSTextField(wrappingLabelWithString: "")
+    private let add = NSButton(title: "Add Frame After Scrolling", target: nil, action: nil)
     private let finish = NSButton(title: "Finish in Editor", target: nil, action: nil)
     var completed: ((CGImage) -> Void)?
-    init(windowID: CGWindowID) {
-        self.windowID = windowID
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 250), styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        super.init(); window.title = "SnapForge — Scrolling Capture"; window.isReleasedWhenClosed = false; window.delegate = self
+    init(selection: RegionSelector.Selection) {
+        self.selection = selection
+        previous = selection.image; composite = selection.image
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 210), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        super.init(); window.title = "SnapForge — Scrolling Region"; window.isReleasedWhenClosed = false
         let root = NSStackView(); root.orientation = .vertical; root.spacing = 12; root.edgeInsets = NSEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-        let row = NSStackView(views: [NSTextField(labelWithString: "Exclude top px"), top, NSTextField(labelWithString: "Bottom px"), bottom]); row.spacing = 8
-        top.setAccessibilityLabel("Exclude top pixels"); bottom.setAccessibilityLabel("Exclude bottom pixels")
-        top.widthAnchor.constraint(equalToConstant: 60).isActive = true; bottom.widthAnchor.constraint(equalToConstant: 60).isActive = true
-        add.target = self; add.action = #selector(addFrame); finish.target = self; finish.action = #selector(done); finish.isEnabled = false
-        for child in [status, row, add, finish] { root.addArrangedSubview(child) }
-        status.widthAnchor.constraint(equalToConstant: 440).isActive = true
-        window.contentView = root; window.center()
+        add.target = self; add.action = #selector(addFrame); finish.target = self; finish.action = #selector(done)
+        for child in [status, add, finish] { root.addArrangedSubview(child) }
+        status.widthAnchor.constraint(equalToConstant: 428).isActive = true
+        window.contentView = root
+        updateStatus()
+        positionOutsideRegion()
     }
     func show() { window.makeKeyAndOrderFront(nil) }
+    private func positionOutsideRegion() {
+        let screen = NSScreen.screens.first { $0.frame.intersects(selection.screenRect) }
+        let available = screen?.visibleFrame ?? selection.screenRect
+        let size = window.frame.size, region = selection.screenRect
+        let origins = [CGPoint(x: region.maxX + 12, y: region.maxY - size.height),
+                       CGPoint(x: region.minX - size.width - 12, y: region.maxY - size.height),
+                       CGPoint(x: region.minX, y: region.minY - size.height - 12),
+                       CGPoint(x: region.minX, y: region.maxY + 12)]
+        if let origin = origins.first(where: { available.contains(CGRect(origin: $0, size: size)) }) { window.setFrameOrigin(origin) }
+        else { window.center() }
+    }
+    private func updateStatus() {
+        status.stringValue = "Captured · \(composite.width) × \(composite.height) pixels. Scroll the content inside your selected region down by less than half its height, then add a frame. Keep the region, window position and zoom fixed. Avoid sticky headers and animated content."
+    }
     @objc private func addFrame() {
-        guard !busy else { return }
-        guard let upper = Int(top.stringValue), let lower = Int(bottom.stringValue), upper >= 0, lower >= 0 else { report("Enter nonnegative whole pixel exclusions."); return }
+        guard !busy, let id = selection.displayID else { return }
         busy = true; add.isEnabled = false; finish.isEnabled = false
         window.orderOut(nil)
         Task {
-            defer { busy = false; add.isEnabled = true; finish.isEnabled = composite != nil; window.makeKeyAndOrderFront(nil) }
+            defer { busy = false; add.isEnabled = true; finish.isEnabled = true; window.makeKeyAndOrderFront(nil) }
             do {
                 try await Task.sleep(for: .milliseconds(300))
-                let image = try await capture.captureWindow(windowID)
-                guard upper + lower < image.height - 40, let frame = image.cropping(to: CGRect(x: 0, y: upper, width: image.width, height: image.height - upper - lower)) else { throw ScrollStitcher.StitchError.dimensions }
+                let image = try await capture.captureDisplay(id)
+                guard image.width == Int(selection.displayPixelSize.width), image.height == Int(selection.displayPixelSize.height),
+                      let frame = image.cropping(to: selection.pixelRect) else { throw ScrollStitcher.StitchError.dimensions }
                 let oldComposite = composite, oldFrame = previous
                 let result = try await Task.detached(priority: .userInitiated) {
-                    if let oldComposite, let oldFrame { return try ScrollStitcher.append(composite: oldComposite, previous: oldFrame, next: frame) }
-                    return frame
+                    try ScrollStitcher.append(composite: oldComposite, previous: oldFrame, next: frame)
                 }.value
                 composite = result; previous = frame
-                top.isEnabled = false; bottom.isEnabled = false
-                add.title = "Add Frame After Scrolling"
-                status.stringValue = "\(result.width) × \(result.height) pixels. Scroll down less than half a viewport, wait for content to settle, then add a frame. Fixed overlays, animations, repeated rows, horizontal motion and changing zoom can prevent stitching."
-            } catch { report(error.localizedDescription) }
+                updateStatus()
+            } catch { status.stringValue = error.localizedDescription }
         }
     }
-    @objc private func done() { guard !busy, let composite else { return }; completed?(composite); window.close() }
-    private func report(_ message: String) { status.stringValue = message }
+    @objc private func done() { guard !busy else { return }; completed?(composite); window.close() }
 }

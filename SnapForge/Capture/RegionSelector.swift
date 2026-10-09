@@ -5,12 +5,26 @@ final class RegionSelector {
     struct Snapshot {
         let frame: NSRect
         let image: CGImage
+        let displayID: CGDirectDisplayID?
+        init(frame: NSRect, image: CGImage, displayID: CGDirectDisplayID? = nil) {
+            self.frame = frame; self.image = image; self.displayID = displayID
+        }
+    }
+    struct Selection {
+        let image: CGImage
+        let pixelRect: CGRect
+        let screenRect: CGRect
+        let displayID: CGDirectDisplayID?
+        let displayPixelSize: CGSize
     }
     private var windows: [NSWindow] = []
-    private var continuation: CheckedContinuation<CGImage?, Never>?
+    private var continuation: CheckedContinuation<Selection?, Never>?
     private var previousApplication: NSRunningApplication?
 
     func select(_ snapshots: [Snapshot]) async -> CGImage? {
+        await selectRegion(snapshots)?.image
+    }
+    func selectRegion(_ snapshots: [Snapshot]) async -> Selection? {
         guard !snapshots.isEmpty else { return nil }
         previousApplication = NSWorkspace.shared.frontmostApplication
         return await withCheckedContinuation { continuation in
@@ -22,7 +36,15 @@ final class RegionSelector {
                 window.isReleasedWhenClosed = false
                 window.isOpaque = true
                 let view = SelectionView(frame: NSRect(origin: .zero, size: snapshot.frame.size), image: snapshot.image)
-                view.finish = { [weak self] image in self?.finish(image) }
+                view.finish = { [weak self] result in
+                    let selection = result.map { result in
+                        Selection(image: result.image, pixelRect: result.crop,
+                                  screenRect: result.rect.offsetBy(dx: snapshot.frame.minX, dy: snapshot.frame.minY),
+                                  displayID: snapshot.displayID,
+                                  displayPixelSize: CGSize(width: snapshot.image.width, height: snapshot.image.height))
+                    }
+                    self?.finish(selection)
+                }
                 window.contentView = view
                 window.makeFirstResponder(view)
                 windows.append(window)
@@ -33,7 +55,7 @@ final class RegionSelector {
             (windows.first(where: { $0.frame.contains(mouse) }) ?? windows.first)?.makeKey()
         }
     }
-    private func finish(_ image: CGImage?) {
+    private func finish(_ image: Selection?) {
         windows.forEach { $0.orderOut(nil); $0.close() }
         windows.removeAll()
         previousApplication?.activate(options: [])
@@ -50,7 +72,7 @@ private final class SelectionWindow: NSWindow {
 
 private final class SelectionView: NSView {
     let image: CGImage
-    var finish: ((CGImage?) -> Void)?
+    var finish: (((image: CGImage, crop: CGRect, rect: CGRect)?) -> Void)?
     private var start: NSPoint?
     private var selection: NSRect?
     override var acceptsFirstResponder: Bool { true }
@@ -96,7 +118,7 @@ private final class SelectionView: NSView {
             needsDisplay = true
             return
         }
-        finish?(result)
+        finish?((image: result, crop: crop, rect: selection))
     }
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 53 { finish?(nil) } else { super.keyDown(with: event) }

@@ -27,6 +27,15 @@ MainActor.assumeIsolated {
         precondition(controller.canvas.performKeyEquivalent(with: event), "Canvas must handle editor command equivalents")
     }
     precondition(commands == ["undo", "redo", "copy", "save", "saveAs", "fit", "zoomIn", "zoomOut"], "Editor keys must route to the correct command")
+    let selection = RegionSelector.Selection(image: image, pixelRect: CGRect(x: 100, y: 200, width: 4000, height: 3000), screenRect: CGRect(x: 100, y: 100, width: 600, height: 400), displayID: 1, displayPixelSize: CGSize(width: 5000, height: 4000))
+    let scrolling = ScrollingCaptureController(selection: selection)
+    var delivered: CGImage?
+    scrolling.completed = { delivered = $0 }
+    scrolling.show()
+    guard let finish = scrolling.window.contentView?.subviews.compactMap({ $0 as? NSButton }).first(where: { $0.title == "Finish in Editor" }) else { fatalError("Missing scrolling finish") }
+    precondition(finish.isEnabled, "Region selection must supply first frame immediately")
+    _ = finish.target?.perform(finish.action, with: finish)
+    precondition(delivered?.width == 4000 && delivered?.height == 3000, "Finish must deliver initial selected image without another capture")
     let pin = PinController(image: image)
     pin.show()
     precondition(pin.window.isVisible && pin.window.level == .floating && !pin.window.hidesOnDeactivate, "Pinned image must float and remain visible")
@@ -38,5 +47,5 @@ MainActor.assumeIsolated {
     } else { fatalError("Missing opacity control") }
     pin.window.close()
     window.close()
-    print("PASS: editor initial sizing, toolbar visibility, fit after resizing, original dimensions, keyboard command routing, pin visibility/opacity/resize controls")
+    print("PASS: editor initial sizing, toolbar visibility, fit after resizing, original dimensions, keyboard command routing, pin visibility/opacity/resize controls, scrolling region first-frame delivery")
 }
