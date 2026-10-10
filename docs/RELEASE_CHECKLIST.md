@@ -40,3 +40,7 @@ The user confirmed SnapForge launched after a real logout/login. Launch-at-login
 ## Remaining-task audit
 
 See [remaining checks](REMAINING_CHECKS.md): 40-frame all-pixel synthetic stitch stress and height protection passed; x86_64 configuration/export tests passed under Rosetta; disabling startup was observed in macOS and restored enabled. Strict integrity passes, but Gatekeeper distribution assessment rejects the ad-hoc app. Full Xcode, approved signing/notarization, physical Intel/second-Mac/multiple-monitor runtime and complete spoken VoiceOver testing remain open.
+
+## Updated Xcode result
+
+Full Xcode 27.0 is now installed and selected. Universal Debug and Release builds, signatures and icon resources passed, as did configuration/export, annotation and advanced regressions using its toolchain. The previous full-Xcode availability blocker is resolved. See [Xcode validation](XCODE_VALIDATION.md). The project has standalone executable test harnesses; it has no XCTest target and no xcodebuild test run is claimed.

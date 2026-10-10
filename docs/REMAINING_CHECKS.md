@@ -22,3 +22,7 @@
 - Long live scroll capture with loading/animation and near-limit memory remains pending despite exact 40-frame synthetic engine test.
 
 The installed binary, privacy grants and output preferences were unchanged throughout. Startup was restored enabled after its temporary disable test.
+
+## Updated Xcode result
+
+Full Xcode 27.0 is now installed and selected. Universal Debug and Release builds, signatures and icon resources passed, as did configuration/export, annotation and advanced regressions using its toolchain. The previous full-Xcode availability blocker is resolved. See [Xcode validation](XCODE_VALIDATION.md). The project has standalone executable test harnesses; it has no XCTest target and no xcodebuild test run is claimed.

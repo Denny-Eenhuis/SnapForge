@@ -55,3 +55,5 @@ Advanced checks: `./scripts/test-advanced.sh` requires native graphics access fo
 Version 0.5.1 includes opt-in **Launch SnapForge at login** in Preferences using Apple Service Management. It is never enabled simply by opening Preferences. See [UX validation](docs/PHASE4_VALIDATION.md) for verified checks and remaining runtime work.
 
 Current installation: `/Users/denny/Applications/SnapForge.app` (personal Applications folder). Transfer package: `build/Release/SnapForge.zip`, with `SnapForge.zip.sha256`. The app includes its original macOS icon; the menu bar uses a monochrome camera. See [release checklist](docs/RELEASE_CHECKLIST.md) and [quality validation](docs/PHASE5_VALIDATION.md) for evidence and remaining work.
+
+With full Xcode installed and selected, run `./scripts/test-xcode-build.sh` for universal Debug/Release project build, signature and icon checks. It stages validation products outside the project and preserves the installed app. See [Xcode results](docs/XCODE_VALIDATION.md).
