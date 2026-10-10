@@ -57,3 +57,5 @@ Version 0.5.1 includes opt-in **Launch SnapForge at login** in Preferences using
 Current installation: `/Users/denny/Applications/SnapForge.app` (personal Applications folder). Transfer package: `build/Release/SnapForge.zip`, with `SnapForge.zip.sha256`. The app includes its original macOS icon; the menu bar uses a monochrome camera. See [release checklist](docs/RELEASE_CHECKLIST.md) and [quality validation](docs/PHASE5_VALIDATION.md) for evidence and remaining work.
 
 With full Xcode installed and selected, run `./scripts/test-xcode-build.sh` for universal Debug/Release project build, signature and icon checks. It stages validation products outside the project and preserves the installed app. See [Xcode results](docs/XCODE_VALIDATION.md).
+
+The shared SnapForge scheme includes the unhosted `SnapForgeTests` XCTest target. Use Xcode’s **Product → Test** (Command-U), or `./scripts/test-xcode.sh`, to exercise Retina cropping, PNG/JPEG dimensions/color, save failures, isolated preferences, undo/redo saved-state behavior and crop rejection. Tests do not launch the installed app or request capture/login permissions.

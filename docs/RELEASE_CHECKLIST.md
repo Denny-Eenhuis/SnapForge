@@ -44,3 +44,5 @@ See [remaining checks](REMAINING_CHECKS.md): 40-frame all-pixel synthetic stitch
 ## Updated Xcode result
 
 Full Xcode 27.0 is now installed and selected. Universal Debug and Release builds, signatures and icon resources passed, as did configuration/export, annotation and advanced regressions using its toolchain. The previous full-Xcode availability blocker is resolved. See [Xcode validation](XCODE_VALIDATION.md). The project has standalone executable test harnesses; it has no XCTest target and no xcodebuild test run is claimed.
+
+The project now also includes an unhosted XCTest target and shared-scheme Test action. All six core XCTest cases passed through xcodebuild test on arm64, with zero failures/skips. The earlier absence of an XCTest target is resolved; see [Xcode validation](XCODE_VALIDATION.md).
