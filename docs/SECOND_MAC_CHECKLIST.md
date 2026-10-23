@@ -27,3 +27,7 @@ No Xcode or administrator access is required for normal operation; corporate pol
 - Inspect Preferences in light/dark mode and navigate controls with VoiceOver.
 - If the user opts in, enable Launch at login, check any required system approval, log out/in and verify one running instance. Disable it and verify the next login does not launch the app.
 - Record hardware, OS, signing identity, permissions and pass/fail evidence.
+
+## User-reported second-Mac result
+
+On October 23, 2026, the user confirmed SnapForge works on the second computer after receiving the transfer/opening and permission setup instructions. The second Mac is workplace-managed. This verifies user-reported second-Mac operation; the model, architecture, macOS version, monitor setup and individual feature results were not supplied. Do not infer physical Intel, multiple-monitor coverage, every checklist item, or Gatekeeper approval without a per-app exception from this report.
