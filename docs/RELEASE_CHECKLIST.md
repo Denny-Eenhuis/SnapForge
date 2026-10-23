@@ -50,3 +50,5 @@ The project now also includes an unhosted XCTest target and shared-scheme Test a
 ## Second-Mac follow-up
 
 The user confirmed successful operation on the workplace-managed second Mac on October 23, 2026. Basic second-Mac transfer/run testing is now user-confirmed. Hardware/OS details and per-feature results remain unrecorded, so physical Intel and multiple-monitor testing remain open. Stable signing/notarization is still unresolved.
+
+The user also confirmed a large live scrolling capture included all of their Slack message activity. Large real-application scrolling is user-verified for that case; near-limit memory measurements and exhaustive seam comparisons remain open.

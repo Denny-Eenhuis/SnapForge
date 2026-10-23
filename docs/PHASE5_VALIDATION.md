@@ -36,3 +36,7 @@ Remaining: stable signing/privacy persistence, actual opt-in login behavior, com
 The user explicitly authorized enabling launch at login for testing. On opening Preferences, Launch SnapForge at login was already checked; no toggle change was made. There was no pending-approval message or registration error. Read-only macOS background-item inspection (`sfltool dumpbtm`) showed com.snapforge.app as an app item with disposition enabled, allowed, notified. The option remains enabled for a future real sign-in test. Actual launch after logout/login and disable behavior are not yet verified.
 
 The user subsequently logged out and logged in and confirmed SnapForge launched automatically. Actual launch at login is now user-verified. Disable behavior remains untested; no claim is made about one-instance/menu-icon count from this report.
+
+## Large live Slack scrolling capture
+
+On October 23, 2026, the user reported capturing all of their Slack message activity in a large scrolling capture and confirmed all content was captured. This provides real-application long-scroll success beyond the synthetic 40-frame engine test. Output dimensions, frame count, duration, peak memory and pixel-level seam comparisons were not supplied; worst-case/near-limit memory and stitching stress remain unmeasured. No Slack message content was collected for this record.
